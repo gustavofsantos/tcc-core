@@ -1,0 +1,17 @@
+{
+  "name": "tcc-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node "
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^7.0.0",
+    "ganache-cli": "^6.1.8",
+    "solc": "^0.4.24",
+    "web3": "^1.0.0-beta.35"
+  }
+}
