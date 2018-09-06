@@ -5,6 +5,7 @@ contract User {
   struct UserInfo {
     string name;
     string publicKey;
+    address rescueContract;
   }
   
   struct Document {
@@ -25,14 +26,27 @@ contract User {
     );
     _;
   }
+  
+  modifier onlyAuthority() {
+    require(
+      "Only the authority that has deployed this contract can execute this"
+      msg.sender == deployer
+    );
+    _;
+  }
 
-  constructor(/*address contractOwner,*/ string name, string publicKey) public {
+  constructor(string name, string publicKey) public {
     owner = msg.sender;
     // owner = contractOwner;
     userInfo = UserInfo({
       name: name,
       publicKey: publicKey
     });
+  }
+
+  /* This function can append a new contract to this */
+  function transferOwnership(address newUserContract) public onlyAuthority {
+    userInfo.rescueContract = newUserContract;
   }
 
   function getUserPublicKey() public returns (string) {

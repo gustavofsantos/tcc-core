@@ -2,6 +2,8 @@ const assert = require('assert');
 const ganache = require('ganache-cli');
 const Web3 = require('web3');
 
+const mocha = require('mocha');
+
 const web3 = new Web3(ganache.provider());
 
 const userContractCompiled = require('../src/ethereum/build/User.json');
@@ -9,23 +11,29 @@ const userContractCompiled = require('../src/ethereum/build/User.json');
 let accounts;
 let user;
 
-(async () => {
-	accounts = await web3.eth.getAccounts();
+describe("User Contract Test", async () => {
+    accounts = await web3.eth.getAccounts();
 
+    it("should deploy one user contract", async () => {
 	// User contract
 	user = await new web3.eth.Contract(JSON.parse(userContractCompiled.interface))
-		.deploy({
-			data: userContractCompiled.bytecode,
-			arguments: [
-				"Gustavo",
-				"public key is here"
-			] 
-		})
-		.send({
-			from: accounts[0],
-			gas: '1000000'
-		});
+	    .deplo({
+		data: userContractCompiled.bytecode,
+		arguments: [
+		    "Gustavo",
+		    "12E4"
+		]
+	    })
+	    .send({
+		from: accounts[0],
+		gas: '1000000'
+	    });
+	assert(user);
+    });
 
-	const pubKey = await user.methods.getUserPublicKey().call() // call does not modify contract
-	console.log('User.getUserPublicKey: ', pubKey);
-})();
+    it("should get user public key", async () => {
+	// call does not modify contract
+	const pubKey = await user.methods.getUserPublicKey().call()
+	assert.equal(pubKey, "12E4");
+    })
+})
