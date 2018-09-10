@@ -11,7 +11,7 @@ contract User {
     string signature;
   }
   
-  address public deployer;
+  address public authority;
   address public owner;
   UserInfo userInfo;
   
@@ -26,6 +26,14 @@ contract User {
     _;
   }
 
+  modifier onlyAuthority() {
+    require(
+      msg.sender == authority
+      "Only the authority can execute this"
+    );
+    _;
+  }
+
   constructor(/*address contractOwner,*/ string name, string publicKey) public {
     owner = msg.sender;
     // owner = contractOwner;
@@ -33,6 +41,10 @@ contract User {
       name: name,
       publicKey: publicKey
     });
+  }
+
+  function disable() public {
+    
   }
 
   function getUserPublicKey() public returns (string) {
