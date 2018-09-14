@@ -1,0 +1,1 @@
+parity --config ../src/ethereum/config/node.toml account new

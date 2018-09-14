@@ -1,0 +1,20 @@
+[parity]
+chain = "genesis.json"
+base_path = "../data"
+[network]
+port = 30301
+[rpc]
+port = 8546
+apis = ["web3", "eth", "net", "personal", "parity", "parity_set", "traces", "rpc", "parity_accounts"]
+interface = "0.0.0.0" #external access to rpc
+[ui]
+port = 8181
+#[websockets]
+#port = 8452
+#[ipc]
+#disable = true
+#[account]
+#password = ["pass.pwds"]
+#[mining]
+#engine_signer = ""
+#reseal_on_txs = "none"
