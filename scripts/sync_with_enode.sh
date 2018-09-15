@@ -1,0 +1,1 @@
+curl --data '{"jsonrpc":"2.0","method":"parity_addReservedPeer","params":["$1"],"id":0}' -H "Content-Type: application/json" -X POST 

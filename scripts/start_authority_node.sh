@@ -1,0 +1,1 @@
+parity --config src/ethereum/config_out/node.toml

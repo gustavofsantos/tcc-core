@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node ",
     "createAccount": "./scripts/create_account.sh",
-    "updateWithPass": "./scripts/"
+    "updateWithPass": "./scripts/update_with_account.sh",
+    "startParity": "./scripts/start_authority_node.sh",
+    "syncWithNode": "./scripts/sync_with_enode.sh"
   },
   "author": "",
   "license": "ISC",

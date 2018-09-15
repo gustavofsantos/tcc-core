@@ -1,1 +1,1 @@
-parity --config ../src/ethereum/config/node.toml account new
+parity account new --chain src/ethereum/config/genesis.json --keys-path src/ethereum/config_out/data/keys

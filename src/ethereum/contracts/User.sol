@@ -13,6 +13,9 @@ contract User {
   
   address public authority;
   address public owner;
+  address public next;
+  address public last;
+  bool private valid;
   UserInfo userInfo;
   
   // IPFS CID (document) -> IPFS CID (signature)
@@ -20,7 +23,7 @@ contract User {
   
   modifier onlyOwner() {
     require(
-      msg.sender == owner,
+      msg.sender == owner && valid,
       "Only the owner of this contract can execute this"
     );
     _;
@@ -28,26 +31,33 @@ contract User {
 
   modifier onlyAuthority() {
     require(
-      msg.sender == authority
+      msg.sender == authority && valid,
       "Only the authority can execute this"
     );
     _;
   }
 
-  constructor(/*address contractOwner,*/ string name, string publicKey) public {
+  constructor(string name, string publicKey, address lastContract) public {
     owner = msg.sender;
+    last = lastContract;
     // owner = contractOwner;
     userInfo = UserInfo({
       name: name,
       publicKey: publicKey
     });
+    valid = true;
   }
 
-  function disable() public {
-    
+  function disable() private {
+    valid = false;
   }
 
-  function getUserPublicKey() public returns (string) {
+  function disableAndLinkToAnother(address nextContract) public onlyAuthority {
+    disable();
+    next = nextContract;
+  }
+
+  function getUserPublicKey() public view returns (string) {
     return userInfo.publicKey;
   }
 
@@ -56,7 +66,7 @@ contract User {
     documents[documentCID] = Document({ signature: documentSignatureCID });
   }
 
-  function getSignatureOf(string documentCID) public returns (string) {
+  function getSignatureOf(string documentCID) public view returns (string) {
     return documents[documentCID].signature;
   }
 }
