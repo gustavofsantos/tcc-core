@@ -8,7 +8,8 @@
     "createAccount": "./scripts/create_account.sh",
     "updateWithPass": "./scripts/update_with_account.sh",
     "startParity": "./scripts/start_authority_node.sh",
-    "syncWithNode": "./scripts/sync_with_enode.sh"
+    "syncWithNode": "./scripts/sync_with_enode.sh",
+    "testUser": "mocha"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +17,7 @@
     "@parity/api": "^2.1.24",
     "fs-extra": "^7.0.0",
     "ganache-cli": "^6.1.8",
+    "mocha": "^5.2.0",
     "solc": "^0.4.24",
     "web3": "^1.0.0-beta.35"
   }
