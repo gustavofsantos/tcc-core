@@ -16,6 +16,8 @@ function compile() {
 	const userContractOutput = solc.compile(userContractSource, 1).contracts;
 	const authorityContractOutput = solc.compile(authorityContractSource, 1).contracts;
 
+	console.log(authorityContractOutput);
+
 	// ensure that build folder exists
 	fs.ensureDirSync(buildPath);
 

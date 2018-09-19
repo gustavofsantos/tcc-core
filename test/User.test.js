@@ -10,6 +10,7 @@ const userContractCompiled = require('../src/ethereum/build/User.json');
 const authorityContractCompiled = require('../src/ethereum/build/Authority.json');
 
 const authority = {};
+const users = [];
 const user1 = {};
 const user2 = {};
 const user3 = {};
@@ -63,6 +64,9 @@ function authorityPairKeys() {
 	})
 }
 
+async function genUsersKeyPair(numberUsers = 5) {
+	users[0]
+}
 
 function userAccount1() {
 	return new Promise((resolve, reject) => {

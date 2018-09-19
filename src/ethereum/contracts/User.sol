@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
 contract User {
-  
   struct UserInfo {
     string name;
     string publicKey;
+    address originalAddress;
   }
   
   struct Document {
@@ -16,7 +16,12 @@ contract User {
   address public next;
   address public last;
   bool private valid;
-  UserInfo userInfo;
+  UserInfo public userInfo;
+  
+  // user info 
+  string public name;
+  string public publicKey;
+  address public originalAddress;
   
   // IPFS CID (document) -> IPFS CID (signature)
   mapping (string => Document) documents;
@@ -37,14 +42,18 @@ contract User {
     _;
   }
 
-  constructor(string name, string publicKey, address lastContract) public {
-    owner = msg.sender;
+  constructor(string userName, string userPublicKey, address lastContract, address originalContractAddress) public {
+    authority = msg.sender;
     last = lastContract;
-    // owner = contractOwner;
-    userInfo = UserInfo({
-      name: name,
-      publicKey: publicKey
-    });
+    name = userName;
+    publicKey = userPublicKey;
+    
+    if (originalContractAddress == address(0)) {
+      originalAddress = address(this);
+    } else {
+      originalAddress = originalContractAddress;
+    }
+    
     valid = true;
   }
 
@@ -56,12 +65,20 @@ contract User {
     disable();
     next = nextContract;
   }
-
-  function getUserPublicKey() public view returns (string) {
-    return userInfo.publicKey;
+  
+  function getName() public view returns (string) {
+    return name;
   }
 
-  function addDocument(string documentCID, string documentSignatureCID) public onlyOwner {
+  function getPublicKey() public view returns (string) {
+    return publicKey;
+  }
+  
+  function getOriginalAddress() public view returns (address) {
+    return originalAddress;
+  }
+
+  function addDocument(string documentCID, string documentSignatureCID) public onlyAuthority {
     // document is a "pointer" that has documentCID as key
     documents[documentCID] = Document({ signature: documentSignatureCID });
   }
