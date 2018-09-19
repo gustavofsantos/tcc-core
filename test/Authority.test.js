@@ -4,7 +4,7 @@ const Web3 = require('web3');
 const fs = require('fs');
 const crypto = require('crypto');
 
-const web3 = new Web3(ganache.provider());
+const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
 
 // const userContractCompiled = require('../src/ethereum/build/User.json');
 // const authorityContractCompiled = require('../src/ethereum/build/Authority.json');
@@ -67,7 +67,7 @@ function deployAuthorityContract(fromAddress) {
       })
       .send({
         from: fromAddress,
-        gas: '1000000000'
+        gas: '3000000'
       });
 
     futureContract
