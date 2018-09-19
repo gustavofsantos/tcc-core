@@ -14,7 +14,7 @@ function compile() {
 	const authorityContractSource = fs.readFileSync(authorityPath, 'utf8');
 
 	const userContractOutput = solc.compile(userContractSource, 1).contracts;
-	const authorityContractOutput = solc.compile(authorityContractSource, 1).contracts;
+	const authorityContractOutput = solc.compile(authorityContractSource, 2).contracts;
 
 	console.log(authorityContractOutput);
 

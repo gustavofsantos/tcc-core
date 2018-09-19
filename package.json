@@ -9,7 +9,8 @@
     "updateWithPass": "./scripts/update_with_account.sh",
     "startParity": "./scripts/start_authority_node.sh",
     "syncWithNode": "./scripts/sync_with_enode.sh",
-    "test": "mocha"
+    "compileAuthority": "",
+    "test": "mocha test/Authority.test.js"
   },
   "author": "",
   "license": "ISC",

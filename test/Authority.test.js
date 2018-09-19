@@ -6,8 +6,11 @@ const crypto = require('crypto');
 
 const web3 = new Web3(ganache.provider());
 
-const userContractCompiled = require('../src/ethereum/build/User.json');
-const authorityContractCompiled = require('../src/ethereum/build/Authority.json');
+// const userContractCompiled = require('../src/ethereum/build/User.json');
+// const authorityContractCompiled = require('../src/ethereum/build/Authority.json');
+
+const authorityABI = fs.readFileSync('src/ethereum/build/Authority.abi');
+const authorityBIN = fs.readFileSync('src/ethereum/build/Authority.bin');
 
 const authority = {};
 
@@ -16,12 +19,17 @@ function test() {
 
     describe("Authority Contract Deployment", () => {
       it("Should deploy authority contract", () => {
-        authorityAddress.then(authority => {
-          deployAuthorityContract(authority).then(contractAddress => {
-            if (contractAddress) assert(true);
-            else assert(false);
-          });
-        });
+        authorityAddress
+          .then(authority => {
+            deployAuthorityContract(authority).then(contractAddress => {
+              if (contractAddress) assert(true);
+              else assert(false);
+            });
+          })
+          .catch(error => {
+            console.log('error:', error);
+            assert(false);
+          })
       });
     });
 
@@ -50,25 +58,30 @@ const authorityAddress = new Promise((resolve, reject) => {
 
 function deployAuthorityContract(fromAddress) {
   return new Promise((resolve, reject) => {
-    const futureContract = new web3.eth.Contract(JSON.parse(authorityContractCompiled.interface))
+    const futureContract = new web3.eth.Contract(JSON.parse(authorityABI))
       .deploy({
-        data: authorityContractCompiled.bytecode,
+        data: authorityBIN,
         arguments: [
         	"authority cid string"
         ]
       })
       .send({
         from: fromAddress,
-        gas: '1000000'
+        gas: '1000000000'
       });
 
-    futureContract.then(contract => {
-      if (contract) {
-        resolve(contract);
-      } else {
-        reject('Contract does not exist');
-      }
-    });
+    futureContract
+      .then(contract => {
+        if (contract) {
+          resolve(contract);
+        } else {
+          reject('Contract does not exist');
+        }
+      })
+      .catch(error => {
+        console.log('[!] ', error);
+        reject(error);
+      });
   })
 }
 
