@@ -13,15 +13,39 @@ const authorityABI = fs.readFileSync('src/ethereum/build/Authority.abi');
 const authorityBIN = fs.readFileSync('src/ethereum/build/Authority.bin');
 
 const authority = {};
+const users = [
+  {
+    name: 'Gustavo Santos',
+    pubKey: '12345'
+  },
+  {
+    name: 'Gustavo Santos',
+    pubKey: '12345'
+  },
+  {
+    name: 'Gustavo Santos',
+    pubKey: '12345'
+  },
+  {
+    name: 'Gustavo Santos',
+    pubKey: '12345'
+  },
+  {
+    name: 'Gustavo Santos',
+    pubKey: '12345'
+  },
+]
 
 function test() {
   describe("Authority Contract Test", () => {
-
     describe("Authority Contract Deployment", () => {
       it("Should deploy authority contract", () => {
         authorityAddress
-          .then(authority => {
-            deployAuthorityContract(authority).then(contractAddress => {
+          .then(authorityObject => {
+            deployAuthorityContract(authorityObject)
+            .then(contractAddress => {
+              authority.contract = contractAddress;
+              authority.address = authorityObject;
               if (contractAddress) assert(true);
               else assert(false);
             });
@@ -34,8 +58,20 @@ function test() {
     });
 
     describe("Deploy User Contract from Authority Contract", () => {
-      it("Should deploy user contract", () => {
-        assert(true);
+      it("Should register user contract", () => {
+        registerUsers()
+        .then(userAddress => {
+          if (userAddress) {
+            console.log('userAddress -> ', userAddress);
+            assert(true);
+          }
+          else
+            assert(false);
+        })
+        .catch(err => {
+          console.log('Error: ', err);
+          assert(false);
+        })
       });
 
       it("User contract should exist", () => {
@@ -82,6 +118,34 @@ function deployAuthorityContract(fromAddress) {
         console.log('[!] ', error);
         reject(error);
       });
+  })
+}
+
+function registerUsers() {
+  return new Promise((resolve, reject) => {
+    if (authority) {
+      console.log('authority: ', authority);
+      authorityAddress
+      .then(address => {
+        authority
+        .contract
+        .methods
+        .registerUsers(users[0].name, users[0].pubKey)
+        .call({
+          from: address
+        })
+        .then(userAddress => {
+          console.log('userAddress:', userAddress);
+          resolve(userAddress);
+        })
+        .catch(err => {
+          console.log('Error: ', err);
+          reject(err);
+        });
+      })
+    } else {
+      reject('authority does not exists');
+    }
   })
 }
 
