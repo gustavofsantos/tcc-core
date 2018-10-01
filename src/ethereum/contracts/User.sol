@@ -1,6 +1,7 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.4.24;
 
 contract User {
+  
   struct UserInfo {
     string name;
     string publicKey;
@@ -49,9 +50,9 @@ contract User {
     publicKey = userPublicKey;
     
     if (originalContractAddress == address(0)) {
-      originalAddress = address(this);
+        originalAddress = address(this);
     } else {
-      originalAddress = originalContractAddress;
+        originalAddress = originalContractAddress;
     }
     
     valid = true;
@@ -67,7 +68,7 @@ contract User {
   }
   
   function getName() public view returns (string) {
-    return name;
+      return name;
   }
 
   function getPublicKey() public view returns (string) {
@@ -75,7 +76,7 @@ contract User {
   }
   
   function getOriginalAddress() public view returns (address) {
-    return originalAddress;
+      return originalAddress;
   }
 
   function addDocument(string documentCID, string documentSignatureCID) public onlyAuthority {
