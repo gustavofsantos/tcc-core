@@ -3,6 +3,7 @@ const ganache = require('ganache-cli');
 const Web3 = require('web3');
 const fs = require('fs');
 const crypto = require('crypto');
+const { genUsers } = require('../src/utils/utils');
 
 const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
 
@@ -12,81 +13,100 @@ const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
 const authorityABI = fs.readFileSync('src/ethereum/build/Authority.abi');
 const authorityBIN = fs.readFileSync('src/ethereum/build/Authority.bin');
 
-const authority = {};
+let authority;
+const users = genUsers(10);
 
 function test() {
-  describe("Authority Contract Test", () => {
+  console.log('\tAuthority Contract Test');
+  console.log('\t=======================');
 
-    describe("Authority Contract Deployment", () => {
-      it("Should deploy authority contract", () => {
-        authorityAddress
-          .then(authority => {
-            deployAuthorityContract(authority).then(contractAddress => {
-              if (contractAddress) assert(true);
-              else assert(false);
-            });
-          })
-          .catch(error => {
-            console.log('error:', error);
-            assert(false);
-          })
-      });
+  console.log('\t\tDeploy Authority Contract');
+  authorityAddress().then(address => {
+    deployAuthorityContract(address).then(authority => {
+      if (authority) {
+        registerUsers(authority).then(addresses => {
+          if (addresses.length === users.length) {
+            console.log(addresses);
+            computeAuthorityStats(authority);
+          }
+        });
+      } else {
+        console.log('\t\t\tFAIL');
+      }
+    }).catch(err => {
+      console.log('Error deploying Authority contract.');
     });
-
-    describe("Deploy User Contract from Authority Contract", () => {
-      it("Should deploy user contract", () => {
-        assert(true);
-      });
-
-      it("User contract should exist", () => {
-        assert(true);
-      });
-    });
-
-  });
+  }).catch(err => {
+    console.log('Error getting authority address');
+  })
 }
 
 test();
 
 
-const authorityAddress = new Promise((resolve, reject) => {
-  getAccounts().then(addresses => {
-    if (addresses) resolve(addresses[0]);
-    else reject('Addresses is empty');
-  })
-})
+/** ------------------------------------------------------------------- **/
 
-function deployAuthorityContract(fromAddress) {
+async function deployAuthorityContract(fromAddress) {
+  const contract = await new web3.eth.Contract(JSON.parse(authorityABI))
+  .deploy({
+    data: authorityBIN,
+    arguments: [
+      "authority cid string"
+    ]
+  })
+  .send({
+    from: fromAddress,
+    gas: '3000000'
+  })
+  .on('error', err => {
+    console.log('[ ERROR ] ', err);
+  })
+  .on('receipt', receipt => {
+    console.log('Authority Contract address: ', receipt.contractAddress);
+  });
+
+  return contract;
+}
+
+function registerUsers(authority, address) {
   return new Promise((resolve, reject) => {
-    const futureContract = new web3.eth.Contract(JSON.parse(authorityABI))
-      .deploy({
-        data: authorityBIN,
-        arguments: [
-        	"authority cid string"
-        ]
-      })
-      .send({
-        from: fromAddress,
-        gas: '3000000'
-      });
+    const futureAddresses = users.map(user =>
+      authority
+        .methods
+        .registerUser(user.name, user.pubKey)
+        .call({
+          from: address
+        }));
 
-    futureContract
-      .then(contract => {
-        if (contract) {
-          resolve(contract);
-        } else {
-          reject('Contract does not exist');
-        }
+    Promise
+      .all(futureAddresses)
+      .then(addresses => {
+        resolve(addresses);
       })
-      .catch(error => {
-        console.log('[!] ', error);
-        reject(error);
-      });
-  })
+      .catch(err => reject(err));
+  });
+}
+
+function changeUserKey(authority, address) {
+
+}
+
+function authorityAddress() {
+  return new Promise((resolve, reject) => {
+    getAccounts().then(addresses => {
+      if (addresses) resolve(addresses[0]);
+      else reject('Addresses is empty');
+    });
+  });
 }
 
 function getAccounts() {
-	return new Promise(resolve => 
+	return new Promise(resolve =>
 		web3.eth.getAccounts()
 			.then(accounts => resolve(accounts)));
+}
+
+function computeAuthorityStats(authority) {
+  // console.log(authority);
+  // console.log('Estimate Gas', authority.estimateGas());
 }
