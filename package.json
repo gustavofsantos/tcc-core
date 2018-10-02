@@ -9,7 +9,7 @@
     "updateWithPass": "./scripts/update_with_account.sh",
     "startParity": "./scripts/start_authority_node.sh",
     "syncWithNode": "./scripts/sync_with_enode.sh",
-    "compileAuthority": "solc -o ./src/ethereum/build ./src/ethereum/contracts/Authority.sol --bin --abi",
+    "compileAuthority": "solc -o ./src/ethereum/build ./src/ethereum/contracts/Authority.sol --bin --abi --overwrite",
     "test": "mocha test/Authority.test.js"
   },
   "author": "",

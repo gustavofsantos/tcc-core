@@ -1,5 +1,7 @@
 pragma solidity ^0.4.24;
 
+import "./UserRegistration.sol";
+
 contract User {
   
   struct UserInfo {

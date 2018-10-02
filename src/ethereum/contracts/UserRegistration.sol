@@ -1,14 +1,20 @@
 pragma solidity 0.4.25;
 
-contract UserRegistration {
-  
-  address public contractDeployer;
-  address public authority;
-  address public user;
+import "./User.sol";
 
-  constructor(address userAddress, address authorityAddress) public {
-    contractDeployer = msg.sender;
-    authority = authorityAddress;
-    user = userAddress;
+contract UserRegistration {
+    
+  User userContract;
+  address invocator;
+  
+  constructor(address userAddr) public {
+    User user = User(userAddr);
+    userContract = user;
+    invocator = msg.sender;
+  }
+  
+  function getUserName() public returns (string) {
+    string memory name = userContract.getName();
+    return name;
   }
 }

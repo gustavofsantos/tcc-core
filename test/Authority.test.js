@@ -24,10 +24,17 @@ function test() {
   authorityAddress().then(address => {
     deployAuthorityContract(address).then(authority => {
       if (authority) {
-        registerUsers(authority).then(addresses => {
+        registerUsers(authority).then(futureAddresses => {
           if (addresses.length === users.length) {
             console.log(addresses);
-            computeAuthorityStats(authority);
+            
+            // select addresses[0] to change user public key
+            addresses[0].then(userAddress => {
+              changeUserKey(userAddress, "nova chave publica")
+                .then(newUserAddress => {
+                  
+                })
+            })
           }
         });
       } else {
@@ -47,22 +54,24 @@ test();
 /** ------------------------------------------------------------------- **/
 
 async function deployAuthorityContract(fromAddress) {
-  const contract = await new web3.eth.Contract(JSON.parse(authorityABI))
-  .deploy({
-    data: authorityBIN,
-    arguments: [
-      "authority cid string"
-    ]
-  })
-  .send({
-    from: fromAddress,
-    gas: '3000000'
-  })
-  .on('error', err => {
-    console.log('[ ERROR ] ', err);
-  })
-  .on('receipt', receipt => {
-    console.log('Authority Contract address: ', receipt.contractAddress);
+  const contract = await new web3.eth.Contract(JSON.parse(authorityABI));
+
+  contract
+    .deploy({
+      data: authorityBIN,
+      arguments: [
+        "authority cid string"
+      ]
+    })
+    .send({
+      from: fromAddress,
+      gas: '3000000'
+    })
+    .on('error', err => {
+      console.log('Error: ', err);
+    })
+    .on('receipt', receipt => {
+      console.log('Authority Contract address: ', receipt.contractAddress);
   });
 
   return contract;
@@ -78,17 +87,28 @@ function registerUsers(authority, address) {
           from: address
         }));
 
-    Promise
-      .all(futureAddresses)
-      .then(addresses => {
-        resolve(addresses);
-      })
-      .catch(err => reject(err));
+    if (futureAddresses)
+      resolve(futureAddresses);
+    else
+      reject('Cannot register all users');
   });
 }
 
-function changeUserKey(authority, address) {
+function changeUserKey(authority, authorityAddress, lastUserContractAddress, newPublicKey) {
+  return new Promise((resolve, reject) => {
+    const futureNewUserAddress = authority
+      .methods
+      .changeUserContract(lastUserContractAddress, newPublicKey)
+      .call({
+        from: authorityAddress
+      });
 
+    futureNewUserAddress
+      .then(address => {
+        resolve(address);
+      })
+      .catch(reject);
+  })
 }
 
 function authorityAddress() {

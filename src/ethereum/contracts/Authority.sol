@@ -4,13 +4,6 @@ import "./User.sol";
 import "./UserModification.sol";
 import "./UserRegistration.sol";
 
-contract UserDeployed {
-  function getName() public view returns (string);
-  function getPublicKey() public view returns (string);
-  function getOriginalAddress() public view returns (address);
-  function disableAndLinkToAnother(address nextContract) public;
-}
-
 contract Authority {
 
   struct UserEntity {
@@ -43,20 +36,20 @@ contract Authority {
     return userAddress;
   }
 
-  function changeUserContract(address userContract) public onlyAuthority returns (address) {
-    UserDeployed oldContract = UserDeployed(userContract);
-    string memory userName = oldContract.getName();
-    string memory userPubKey = oldContract.getPublicKey();
-    address originalUserContract = oldContract.getOriginalAddress();
+  function changeUserContract(address userContractAddress, string newPublicKey) public onlyAuthority returns (address) {
+    User oldContract = User(userContractAddress);
+    string memory originalUserName = oldContract.getName();
+    string memory originalUserPubKey = oldContract.getPublicKey();
+    address originalUserContractAddress = oldContract.getOriginalAddress();
 
     // create a new user contract
-    User user = new User(userName, userPubKey, userContract, originalUserContract);
+    User user = new User(originalUserName, newPublicKey, userContractAddress, originalUserContractAddress);
     
     // get new user contract address
     address newUserContractAddress = address(user);
 
     // register modification
-    users[originalUserContract].userContract = newUserContractAddress;
+    users[originalUserContractAddress].userContract = newUserContractAddress;
 
     // disable old user contract and link to the new address
     oldContract.disableAndLinkToAnother(newUserContractAddress);
@@ -64,7 +57,7 @@ contract Authority {
     return newUserContractAddress;
   }
 
-  function changeUserAttributes(address userAddress, string newUserCIDAttributes) public onlyAuthority {
-
+  function changeUserAttributes(address userContractAddress, string newUserCIDAttributes) public onlyAuthority {
+    
   }
 }
