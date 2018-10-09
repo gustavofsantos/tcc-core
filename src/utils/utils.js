@@ -1,26 +1,40 @@
-function range(n) {
-  return ;
-}
+const Leite = require('leite');
+const keypair = require('keypair');
 
-function genName() {
-  return "Fulano de Tal";
-}
+const leite = new Leite();
 
-function genPublicKey() {
-  return "123456789abc";
-}
-
-function genUsers(number) {
-  let users = [];
-  for (let i = 0; i < number; i++) {
-    users.push({
-      name: genName(),
-      pubKey: genPublicKey()
-    });
+function getKeyPair() {
+  const pair = keypair({ bits: 256 });
+  return {
+    public: pair.public,
+    private: pair.private
   }
-  return users;
+}
+
+function getUser() {
+  const pair = getKeyPair();
+  return {
+    name: leite.pessoa.nome(),
+    id: leite.pessoa.cpf(),
+    born: leite.pessoa.nascimento({
+      string: true,
+      formato: "DD/MM/YYYY"
+    }),
+    location: leite.localizacao.logradouro(),
+    neighborhood: leite.localizacao.bairro(),
+    postcode: leite.localizacao.cep(),
+    city: leite.localizacao.cidade(),
+    province: leite.localizacao.estado(),
+    publicKey: pair.public,
+    privateKey: pair.private
+  }
+}
+
+function getUsers(n) {
+  return [...Array(n)].map(n => getUser());
 }
 
 module.exports = {
-  genUsers
+  getUser,
+  getUsers
 }

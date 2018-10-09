@@ -10,7 +10,8 @@
     "startParity": "./scripts/start_authority_node.sh",
     "syncWithNode": "./scripts/sync_with_enode.sh",
     "compileAuthority": "solc -o ./src/ethereum/build ./src/ethereum/contracts/Authority.sol --bin --abi --overwrite",
-    "test": "mocha test/Authority.test.js"
+    "test": "node test/Authority.test.js",
+    "testAuthority": "mocha test/Authority.test.js"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +19,8 @@
     "@parity/api": "^2.1.24",
     "fs-extra": "^7.0.0",
     "ganache-cli": "^6.1.8",
+    "keypair": "^1.0.1",
+    "leite": "^0.2.0",
     "mocha": "^5.2.0",
     "solc": "^0.4.24",
     "web3": "^1.0.0-beta.35"
