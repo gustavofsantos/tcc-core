@@ -1,0 +1,23 @@
+
+> tcc-core@1.0.0 testAuthority /home/gsantos/Workspace/tcc-core
+> mocha --bail test/Authority.test.js
+
+
+
+  Authority Contract Test
+    Deploy one authority contract
+Authority Contract address:  0x92f0A89E774a9E92dDff39Af56Ce3E77F8E7382d
+      1) Should authority be deployed at blockchain
+
+  0 passing (2s)
+  1 failing
+
+  1) Authority Contract Test
+       Deploy one authority contract
+         Should authority be deployed at blockchain:
+     Error: Timeout of 2000ms exceeded. For async tests and hooks, ensure "done()" is called; if returning a Promise, ensure it resolves. (/home/gsantos/Workspace/tcc-core/test/Authority.test.js)
+  
+
+
+
+

@@ -29,11 +29,11 @@ contract Authority {
     authorityAttributes = attributesCID;
   }
 
-  function registerUser(string userName, string userPubKey) public onlyAuthority returns (address) {
+  function registerUser(string userName, string userPubKey) public payable onlyAuthority returns (address) {
     User user = new User(userName, userPubKey, address(0), address(0));
     address userAddress = address(user);
     users[userAddress] = UserEntity({ userContract: userAddress });
-    return userAddress;
+    return user;
   }
 
   function changeUserPublicKey(address userContractAddress, string newPublicKey) public onlyAuthority returns (address) {
