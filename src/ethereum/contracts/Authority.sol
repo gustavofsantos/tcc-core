@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.4.24;
 
 import "./User.sol";
 import "./UserModification.sol";
@@ -14,11 +14,11 @@ contract Authority {
   string public authorityAttributes;
 
   /* original address => user valid */
-  mapping (address => UserEntity) users;
+  mapping (address => address) users;
 
   modifier onlyAuthority() {
     require(
-      msg.sender == authority,
+      msg.sender == authority,2
       "Only the authority owner of this contract can run this"
     );
     _;
@@ -29,37 +29,43 @@ contract Authority {
     authorityAttributes = attributesCID;
   }
 
-  function registerUser(string userName, string userPubKey) public payable onlyAuthority returns (address) {
+  function registerUser(string userName, string userPubKey) 
+    public payable onlyAuthority returns (User) {
+    
     User user = new User(userName, userPubKey, address(0), address(0));
-    address userAddress = address(user);
-    users[userAddress] = UserEntity({ userContract: userAddress });
+    users[user] = user;
     return user;
   }
 
-  function changeUserPublicKey(address userContractAddress, string newPublicKey) public onlyAuthority returns (address) {
-    User oldContract = User(userContractAddress);
-    string memory originalUserName = oldContract.getName();
-    string memory originalUserPubKey = oldContract.getPublicKey();
-    address originalUserContractAddress = oldContract.getOriginalAddress();
+  function changeUserPublicKey(User user, string newPublicKey) 
+    public onlyAuthority returns (User) {
+
+    string memory originalUserName = user.getName();
+    address originalUserContractAddress = user.getOriginalAddress();
 
     // create a new user contract
     // Create a new user contract passing the public static values, the new public
-    User user = new User(originalUserName, newPublicKey, userContractAddress, originalUserContractAddress);
-    
-    // get new user contract address
-    address newUserContractAddress = address(user);
+    User newUser = new User(originalUserName, newPublicKey, address(user), originalUserContractAddress);
 
     // register modification
-    users[originalUserContractAddress].userContract = newUserContractAddress;
+    users[originalUserContractAddress] = newUser;
 
     // disable old user contract and link to the new address
-    oldContract.disableAndLinkToAnother(newUserContractAddress);
+    user.disableAndLinkToAnother(address(newUser));
 
-    return newUserContractAddress;
+    return newUser;
   }
 
-  function changeUserName(address userContractAddress, string newUserCIDAttributes) public onlyAuthority {
-    User oldContract = User(userContractAddress);
+  function changeUserName(User user, string newUserName) public onlyAuthority returns (User) {
+    string memory userPublicKey = user.getPublicKey();
+    address originalUserContractAddress = user.getOriginalAddress();
 
+    User newUser = new User(newUserName, userPublicKey, address(user), originalUserContractAddress);
+
+    users[originalUserContractAddress] = newUser;
+
+    user.disableAndLinkToAnother(address(newUser));
+
+    return newUser;
   }
 }

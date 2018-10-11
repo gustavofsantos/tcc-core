@@ -5,8 +5,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { getUsers, getUser } = require('../src/utils/utils');
 
-// const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
-const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
+const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
+// const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
 
 const authorityABI = fs.readFileSync('src/ethereum/build/Authority.abi');
 const authorityBIN = fs.readFileSync('src/ethereum/build/Authority.bin');
@@ -57,14 +57,14 @@ describe("Authority Contract Test", () => {
     it('Should register one user and get the user contract address', async () => {
       try {
         const { address, cost } = await registerUser(user, authority, authorityAddress);
+        console.log('---');
+        console.log('user address: ', address);
+        console.log('cost: ', cost);
 
         stats.operations.registerUser.push(cost);
         userAddresses.push(address);
         users.push(user);
 
-        console.log('---');
-        console.log('user address: ', address);
-        console.log('cost: ', cost);
         
         assert(!!address);
       } catch (e) {
@@ -98,7 +98,7 @@ describe("Authority Contract Test", () => {
     .timeout(10000);
   });
 
-  describe("Check if users are correct into blockchain", () => {
+  /* describe("Check if users are correct into blockchain", () => {
     it("Should all be the same", async () => {
       try {
         const userName = await getUserName(userAddresses[0]);
@@ -110,7 +110,7 @@ describe("Authority Contract Test", () => {
       }
     })
     .timeout(10000);
-  })
+  }) */
 });
 
 
@@ -153,13 +153,13 @@ async function createAccountFromPrivateKey(privateKey) {
 
 async function registerUser(user, authority, authorityAddress) {
   try {
-    const account = await createAccountFromPrivateKey(user.privateKey);
+    // const account = await createAccountFromPrivateKey(user.privateKey);
     const method = authority
       .methods
       .registerUser(user.name, user.publicKey);
 
     
-    wait(500);
+    // wait(500);
     const userContractAddress = await method.call({ from: authorityAddress });
     const cost = await method.estimateGas({ from: authorityAddress });
 
