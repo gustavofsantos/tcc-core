@@ -7,17 +7,20 @@ const {
   deployAuthorityContract,
   authorityContractAttributes,
   createUserContract,
-  deployUserContract
+  deployUserContract,
+  stop
 } = require('../src/utils/lib');
+const { normal, success, error } = require('../src/utils/logger');
 
 describe("TCC-CORE UNIT TEST", () => {
   let authorityAddress;
   let authorityContract;
 
-  before(async () => {
+  before(async (done) => {
+    this.timeout(10000);
     try {
       authorityAddress = await getAuthorityAddress();
-      const authorityAttributes = getUser()
+      const authorityAttributes = getUser();
 
       // deploy authority contract
       const contract = await createAuthorityContract();
@@ -25,15 +28,24 @@ describe("TCC-CORE UNIT TEST", () => {
 
       // set authority contract
       authorityContract = deployedContract;
+      done();
     } catch (e) {
       console.log(e);
+      done();
     }
   });
+
+  after(() => {
+    console.log(normal('Finishing tests...'));
+    stop();
+  })
 
   describe("Check if authority contract is deployed", () => {
     it("Should authority contract be deployed", () => {
       assert(authorityAddress && authorityContract);
-    });
+    })
+    .setMaxListeners(32)
+    .timeout(10000);
   });
 
   describe("Get Authority attributes", () => {
@@ -43,13 +55,17 @@ describe("TCC-CORE UNIT TEST", () => {
 
         console.log('---');
         console.log('Attributes: ', attributes);
-        console.loh('Operation cost: ', cost);
+        console.log('Operation cost: ', cost);
         console.log('+++');
+
+        assert(attributes && cost);
       } catch (e) {
         console.log(e);
         assert(false);
       }
-    });
+    })
+    .setMaxListeners(32)
+    .timeout(10000);
   });
 
 

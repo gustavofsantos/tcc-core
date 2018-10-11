@@ -1,20 +1,23 @@
 const ganache = require('ganache-cli');
 const Web3 = require('web3');
 const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
-const { pushToIPFS, pullFromIPFS } = require('./lib_ipfs');
+const { pushToIPFS, pullFromIPFS, stopIPFS } = require('./lib_ipfs');
+const { normal, success, error, warning } = require('./logger');
 
 const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
 
-const authorityABI = fs.readFileSync('../ethereum/build/Authority2.abi');
-const authorityBIN = fs.readFileSync('../ethereum/build/Authority2.bin');
-const userABI = fs.readFileSync('../ethereum/build/User2.abi');
-const userBIN = fs.readFileSync('../ethereum/build/User2.bin');
+console.log(normal(' - Loading files...'));
+const authorityABI = fs.readFileSync('src/ethereum/build/Authority2.abi');
+const authorityBIN = fs.readFileSync('src/ethereum/build/Authority2.bin');
+const userABI = fs.readFileSync('src/ethereum/build/User2.abi');
+const userBIN = fs.readFileSync('src/ethereum/build/User2.bin');
+console.log(success(' - Loaded'));
 
 async function getAuthorityAddress() {
   try {
     const accounts = await getAccounts();
-    
     // the first account is the authority account
     return accounts[0];
   } catch (e) {
@@ -57,30 +60,33 @@ async function createAuthorityContract() {
 
 /**
  * Deploy the authority contract to the blockchain
- * @param {string} authorityAddress 
- * @param {object} authorityContract 
- * @param {object} authorityAttributes 
+ * @param {string} authorityAddress
+ * @param {object} authorityContract
+ * @param {object} authorityAttributes
  */
 async function deployAuthorityContract(authorityAddress, authorityContract, authorityAttributes) {
   try {
-    const authorityIPFSCID = "sdfinsijncsdc";
+    const authorityIPFSCID = await pushToIPFS(authorityAttributes);
 
-    const deployedContract = await authorityContract
-      .deploy({
-        data: authorityBIN,
-        arguments: [
-          authorityIPFSCID
-        ]
-      })
-      .send({
-        from: authorityAddress,
-        gas: '3000000'
-      })
-      .on('receipt', () => {
-        console.log('\nAuthority Contract address: ', receipt.contractAddress, '\n');
-      });
-      
-    return deployedContract;
+    if (authorityIPFSCID) {
+      const deployedContract = await authorityContract
+        .deploy({
+          data: authorityBIN,
+          arguments: [
+            authorityIPFSCID
+          ]
+        })
+        .send({
+          from: authorityAddress,
+          gas: '3000000'
+        })
+        .on('receipt', receipt => {
+          console.log('\nAuthority Contract address: ', receipt.contractAddress, '\n');
+        });
+      return deployedContract;
+    } else {
+      return null;
+    }
   } catch (e) {
     return null;
   }
@@ -88,15 +94,15 @@ async function deployAuthorityContract(authorityAddress, authorityContract, auth
 
 /**
  * Get authority attributes
- * @param {object} authorityContract 
- * @param {string} callerAddress 
+ * @param {object} authorityContract
+ * @param {string} callerAddress
  */
 async function authorityContractAttributes(authorityContract, callerAddress) {
   try {
     const method = await authorityContract
       .methods
       .getAuthorityAttributesCID()
-    
+
     const attributesCID = await method.call({ from: callerAddress });
     const cost = await method.estimateGas({ from: callerAddress });
 
@@ -124,9 +130,9 @@ async function createUserContract() {
 
 /**
  * Deploy the User contract to the blockchain
- * @param {string} userAddress 
- * @param {object} userContract 
- * @param {object} userAttributes 
+ * @param {string} userAddress
+ * @param {object} userContract
+ * @param {object} userAttributes
  */
 async function deployUserContract(userAddress, userContract, userAttributes) {
   try {
@@ -145,13 +151,17 @@ async function deployUserContract(userAddress, userContract, userAttributes) {
       .send({
         from: userAddress,
         gas: '3000000'
-      })
-    
+      });
+
     return deployedContract
   } catch (e) {
     console.log(e);
     return null;
   }
+}
+
+function stop() {
+  stopIPFS();
 }
 
 module.exports = {
@@ -162,5 +172,6 @@ module.exports = {
   deployAuthorityContract,
   authorityContractAttributes,
   createUserContract,
-  deployUserContract
+  deployUserContract,
+  stop
 }
