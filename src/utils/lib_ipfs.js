@@ -4,24 +4,11 @@ const node = new IPFS({
   repo: './.ipfs'
 });
 
-let ipfsReady = false;
 
 function waitIpfsReady() {
   return new Promise((resolve, reject) => {
-    if (ipfsReady) {
-      resolve(true);
-    } else {
-      console.log(warning(' - Waiting for IPFS...'));
-      node.on('ready', () => {
-        console.log(success(' - IPFS is ready'));
-        resolve(true);
-      });
-
-      node.on('error', () => {
-        console.log(error(' - Could not start IPFS'));
-        reject(false);
-      });
-    }
+    node.on('ready', resolve);
+    node.on('error', reject);
   });
 }
 
@@ -32,25 +19,26 @@ function stopIPFS() {
 
 /**
  * Push a string of data to IPFS
- * @param {object} data
+ * @param {object} dataToPush
  * @return {string}
  */
-async function pushToIPFS(data) {
-  console.log(normal(" - Pushing to IPFS:", data));
-  try {
-    const isReady = await waitIpfsReady();
-    if (isReady) {
-      const files = await node.files.add(Buffer.from(JSON.stringify(data)));
-      console.log(success("Pushed: ", files));
-      return files[0].hash;
+function pushToIPFS(dataToPush) {
+  return new Promise((resolve, reject) => {
+    if (Object.keys(dataToPush).length > 0) {
+      node.files.add(Buffer.from(JSON.stringify(dataToPush)), (err, files) => {
+        if (err) {
+          console.log(err);
+          reject(err);
+        } 
+        else {
+          resolve(files[0].hash);
+        }
+      });
     } else {
-      return null;
+      console.log(warning('Trying to push an empty object'));
+      resolve('');
     }
-  } catch (e) {
-    console.log(error("Not pushed."));
-    console.log(e);
-    return null;
-  }
+  });
 }
 
 /**
@@ -58,23 +46,26 @@ async function pushToIPFS(data) {
  * @param {string} cid
  * @return {string}
  */
-async function pullFromIPFS(cid) {
-  try {
-    const isReady = await waitIpfsReady();
-    if (isReady) {
-      const data = node.files.cat(cid);
-      return data.toString('utf8');
+function pullFromIPFS(cid) {
+  return new Promise((resolve, reject) => {
+    if (cid) {
+      node.files.cat(cid, (err, file) => {
+        if (err) reject(err);
+        else {
+          const stringFile = file.toString('utf8');
+          resolve(stringFile);
+        }
+      })
     } else {
-      throw('IPFS is not ready');
+      console.log(warning("IPFS CID is empty."));
+      resolve('');
     }
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
+  });
 }
 
 module.exports = {
   pushToIPFS,
   pullFromIPFS,
-  stopIPFS
+  stopIPFS,
+  waitIpfsReady
 }

@@ -8,6 +8,7 @@ const {
   authorityContractAttributes,
   createUserContract,
   deployUserContract,
+  waitSystemReady,
   stop
 } = require('../src/utils/lib');
 const { normal, success, error } = require('../src/utils/logger');
@@ -16,9 +17,11 @@ describe("TCC-CORE UNIT TEST", () => {
   let authorityAddress;
   let authorityContract;
 
-  before(async (done) => {
-    this.timeout(10000);
+  before(async () => {
+    console.log(normal('Running before all hook...'));
     try {
+      await waitSystemReady();
+
       authorityAddress = await getAuthorityAddress();
       const authorityAttributes = getUser();
 
@@ -28,10 +31,10 @@ describe("TCC-CORE UNIT TEST", () => {
 
       // set authority contract
       authorityContract = deployedContract;
-      done();
+      console.log(success('Authority contract created and deployed.'));
     } catch (e) {
+      console.log(error('Error creating or deploying the Authority contract.'));
       console.log(e);
-      done();
     }
   });
 
@@ -51,14 +54,9 @@ describe("TCC-CORE UNIT TEST", () => {
   describe("Get Authority attributes", () => {
     it("Should return a object with the cost of the operation", async () => {
       try {
-        const { attributes, cost } = authorityContractAttributes(authorityContract, authorityAddress);
+        const { attributes, cost } = await authorityContractAttributes(authorityContract, authorityAddress);
 
-        console.log('---');
-        console.log('Attributes: ', attributes);
-        console.log('Operation cost: ', cost);
-        console.log('+++');
-
-        assert(attributes && cost);
+        assert(Object.keys(attributes).length > 0  && cost);
       } catch (e) {
         console.log(e);
         assert(false);

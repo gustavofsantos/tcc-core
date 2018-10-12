@@ -1,3 +1,4 @@
 node_modules
 src/ethereum/config/pass.pwd
 src/ethereum/config_out
+.ipfs

@@ -3,7 +3,7 @@ const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { pushToIPFS, pullFromIPFS, stopIPFS } = require('./lib_ipfs');
+const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
 const { normal, success, error, warning } = require('./logger');
 
 const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
@@ -67,27 +67,27 @@ async function createAuthorityContract() {
 async function deployAuthorityContract(authorityAddress, authorityContract, authorityAttributes) {
   try {
     const authorityIPFSCID = await pushToIPFS(authorityAttributes);
+    console.log('authorityIPFSCID', authorityIPFSCID);
 
-    if (authorityIPFSCID) {
-      const deployedContract = await authorityContract
-        .deploy({
-          data: authorityBIN,
-          arguments: [
-            authorityIPFSCID
-          ]
-        })
-        .send({
-          from: authorityAddress,
-          gas: '3000000'
-        })
-        .on('receipt', receipt => {
-          console.log('\nAuthority Contract address: ', receipt.contractAddress, '\n');
-        });
-      return deployedContract;
-    } else {
-      return null;
-    }
+    const deployedContract = await authorityContract
+      .deploy({
+        data: authorityBIN,
+        arguments: [
+          authorityIPFSCID
+        ]
+      })
+      .send({
+        from: authorityAddress,
+        gas: '3000000'
+      })
+      .on('receipt', receipt => {
+        // console.log('receipt', receipt);
+        // console.log('\nAuthority Contract address: ', receipt.contractAddress, '\n');
+      });
+
+    return deployedContract;
   } catch (e) {
+    console.log(e);
     return null;
   }
 }
@@ -110,7 +110,7 @@ async function authorityContractAttributes(authorityContract, callerAddress) {
     const attributes = JSON.parse(stringAttributes);
 
     return {
-      result: attributes,
+      attributes,
       cost
     }
   } catch (e) {
@@ -160,6 +160,14 @@ async function deployUserContract(userAddress, userContract, userAttributes) {
   }
 }
 
+async function waitSystemReady() {
+  try {
+    await waitIpfsReady();
+  } catch(e) {
+    console.log(e);
+  }
+}
+
 function stop() {
   stopIPFS();
 }
@@ -173,5 +181,6 @@ module.exports = {
   authorityContractAttributes,
   createUserContract,
   deployUserContract,
+  waitSystemReady,
   stop
 }
