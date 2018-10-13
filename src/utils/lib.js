@@ -6,14 +6,15 @@ const crypto = require('crypto');
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
 const { normal, success, error, warning } = require('./logger');
 
-const web3 = new Web3(ganache.provider({ gasLimit: 30000000 }));
+const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
+// const web3 = new Web3(ganache.provider({ gasLimit: 30000000, total_accounts: 50 }));
 
-console.log(normal(' - Loading files...'));
+const mnemonic = "peasant first poem hamster suggest nest decrease stone lonely shed dwarf best";
+
 const authorityABI = fs.readFileSync('src/ethereum/build/Authority2.abi');
 const authorityBIN = fs.readFileSync('src/ethereum/build/Authority2.bin');
 const userABI = fs.readFileSync('src/ethereum/build/User2.abi');
 const userBIN = fs.readFileSync('src/ethereum/build/User2.bin');
-console.log(success(' - Loaded'));
 
 async function getAuthorityAddress() {
   try {
@@ -25,13 +26,44 @@ async function getAuthorityAddress() {
   }
 }
 
-async function getUserAddresses() {
+/**
+ * @param {Number} n
+ */
+async function getUserAddresses(n) {
   try {
-    const [_, ...users] = await getAccounts();
-    return users;
+    const accounts = await getAccounts();
+    if (n) {
+      return accounts.slice(1, n + 1);  
+    } else {
+      return accounts.slice(1);
+    }
   } catch (e) {
     return [];
   }
+}
+
+async function createAccount(privateKey) {
+  try {
+    if (privateKey) {
+      // const account = await web3.eth.accounts.privateKeyToAccount(privateKey);
+      const account = await web3.eth.personal.newAccount(privateKey);
+      return account;
+    } else {
+      const account = await web3.eth.accounts.create();
+      return account;
+    }
+  } catch (error) {
+    console.log(error);
+    return error;
+  }
+}
+
+async function getEthereumAccounts() {
+  return await web3.eth.personal.listAccounts;
+}
+
+async function unlockAccountWithInternalMnemonic(account) {
+  return await web3.eth.personal.unlockAccount(account, mnemonic, 15000);
 }
 
 /**
@@ -67,8 +99,6 @@ async function createAuthorityContract() {
 async function deployAuthorityContract(authorityAddress, authorityContract, authorityAttributes) {
   try {
     const authorityIPFSCID = await pushToIPFS(authorityAttributes);
-    console.log('authorityIPFSCID', authorityIPFSCID);
-
     const deployedContract = await authorityContract
       .deploy({
         data: authorityBIN,
@@ -136,8 +166,8 @@ async function createUserContract() {
  */
 async function deployUserContract(userAddress, userContract, userAttributes) {
   try {
-    const stringUserAttributes = JSON.stringify(userAttributes);
-    const userAttributesCID = await pushToIPFS(stringUserAttributes);
+    const userAttributesCID = await pushToIPFS(userAttributes);
+    console.log("userAttributesCID:", userAttributesCID);
 
     const { name, id, location, publicKey } = userAttributes;
 
@@ -151,9 +181,15 @@ async function deployUserContract(userAddress, userContract, userAttributes) {
       .send({
         from: userAddress,
         gas: '3000000'
+      })
+      .on('receipt', receipt => {
+        // console.log(normal("Deploy user contract"));
+        // console.log(normal('===================='));
+        // console.log(receipt);
+        // console.log();
       });
 
-    return deployedContract
+    return deployedContract;
   } catch (e) {
     console.log(e);
     return null;
@@ -176,6 +212,8 @@ module.exports = {
   getAuthorityAddress,
   getUserAddresses,
   getAccounts,
+  unlockAccountWithInternalMnemonic,
+  createAccount,
   createAuthorityContract,
   deployAuthorityContract,
   authorityContractAttributes,

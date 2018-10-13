@@ -2,7 +2,9 @@ const assert = require('assert');
 const { getUsers, getUser } = require('../src/utils/utils');
 const {
   getAuthorityAddress,
-  getAccounts,
+  getUserAddresses,
+  createAccount,
+  unlockAccountWithInternalMnemonic,
   createAuthorityContract,
   deployAuthorityContract,
   authorityContractAttributes,
@@ -16,6 +18,7 @@ const { normal, success, error } = require('../src/utils/logger');
 describe("TCC-CORE UNIT TEST", () => {
   let authorityAddress;
   let authorityContract;
+  let users = [];
 
   before(async () => {
     console.log(normal('Running before all hook...'));
@@ -66,5 +69,83 @@ describe("TCC-CORE UNIT TEST", () => {
     .timeout(10000);
   });
 
+  // describe("Create one user account", () => {
+  //   it("Should create a Ethereum account", async () => {
+  //     const user = getUser();
+  //     const userAccount = await createAccount(user.privateKey);
 
-})
+  //     console.log(' => ', userAccount);
+
+  //     // should have an address
+  //     assert(!!userAccount);
+  //   })
+  //   .timeout(10000);
+  // });
+
+  describe("Create 50 users", () => {
+    let userAddresses;
+    let userObjects;
+
+    it("Should create 50 different users", () => {
+      userObjects = getUsers(50);
+      assert(userObjects.length === 50);
+    });
+
+    it("Should get 50 user addresses", async () => {
+      const addresses = await getUserAddresses(50);
+      console.log('length: ', addresses.length);
+      userAddresses = addresses;
+      assert(userAddresses.length === 50);
+    });
+
+    it("Should unlock all accounts", async () => {
+      for (account of userAddresses) {
+        await unlockAccountWithInternalMnemonic(account);
+      }
+    });
+
+    it("Should deploy 50 user contracts", async () => {
+      const userContract = await createUserContract();
+
+      const usersDeployed = await userAddresses.map(async (address, index) => {
+        const userObject = userObjects[index];
+        const deployedContract = await deployUserContract(address, userContract, userObject);
+        return ({
+          address,
+          object: userObject,
+          contract: deployedContract
+        });
+      });
+
+      
+      await Promise.all(usersDeployed);
+      console.log(usersDeployed);
+
+      for (let userDeployed of usersDeployed) {
+
+        console.log('userDeployed.address? ', !!userDeployed.address);
+        console.log('userDeployed.object? ', !!userDeployed.object);
+        console.log('userDeployed.contract? ', !!userDeployed.contract);
+
+
+        if (!!userDeployed.address && Object.keys(userDeployed.object).length > 0 && !!userDeployed.contract) {
+          console.log('will push');
+          users.push(userDeployed);
+        } else {
+          console.log('not pushed');
+          throw('Error')
+        }
+      }
+
+      assert(users.length === 50);
+    })
+    .timeout(30000);
+  });
+});
+
+
+function wait(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
