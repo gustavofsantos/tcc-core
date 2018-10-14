@@ -4,12 +4,17 @@ const {
   getAuthorityAddress,
   getUserAddresses,
   createAccount,
+  unlockAccount,
   unlockAccountWithInternalMnemonic,
   createAuthorityContract,
   deployAuthorityContract,
   authorityContractAttributes,
+  authorityRegisterUser,
+  authorityChangeUserPublicKey,
+  authorityChangeUserAttributes,
   createUserContract,
   deployUserContract,
+  getUserContractAttributes,
   waitSystemReady,
   stop
 } = require('../src/utils/lib');
@@ -82,64 +87,63 @@ describe("TCC-CORE UNIT TEST", () => {
   //   .timeout(10000);
   // });
 
-  describe("Create 50 users", () => {
-    let userAddresses;
-    let userObjects;
+  describe("Create 50 users using 50 accounts previously created", () => {
+    let userDefinitions;
 
-    it("Should create 50 different users", () => {
-      userObjects = getUsers(50);
-      assert(userObjects.length === 50);
-    });
-
-    it("Should get 50 user addresses", async () => {
-      const addresses = await getUserAddresses(50);
-      console.log('length: ', addresses.length);
-      userAddresses = addresses;
-      assert(userAddresses.length === 50);
-    });
-
-    it("Should unlock all accounts", async () => {
-      for (account of userAddresses) {
-        await unlockAccountWithInternalMnemonic(account);
-      }
+    it("Should create 50 users definitions", () => {
+      userDefinitions = getUsers(50);
+      assert(userDefinitions.length === 50);
     });
 
     it("Should deploy 50 user contracts", async () => {
-      const userContract = await createUserContract();
+      try {
+        // get the addresses
+        const addresses = await getUserAddresses(50);
 
-      const usersDeployed = await userAddresses.map(async (address, index) => {
-        const userObject = userObjects[index];
-        const deployedContract = await deployUserContract(address, userContract, userObject);
-        return ({
-          address,
-          object: userObject,
-          contract: deployedContract
+        // create user contract
+        const contract = await createUserContract();
+
+        const deployedContracts = addresses.map(async (userAddress, index) => {
+          const userContract = await deployUserContract(userAddress, contract, userDefinitions[index]);
+          return userContract;
         });
-      });
 
-      
-      await Promise.all(usersDeployed);
-      console.log(usersDeployed);
+        await Promise.all(deployedContracts);
 
-      for (let userDeployed of usersDeployed) {
+        users = deployedContracts.map(async (deployedUserContract, index) => {
+          const contract = await deployedUserContract;
+          const definition = userDefinitions[index];
 
-        console.log('userDeployed.address? ', !!userDeployed.address);
-        console.log('userDeployed.object? ', !!userDeployed.object);
-        console.log('userDeployed.contract? ', !!userDeployed.contract);
+          const isRegistered = await authorityRegisterUser(contract._address, authorityContract, authorityAddress);
 
+          console.log('isRegistered? ', isRegistered);
 
-        if (!!userDeployed.address && Object.keys(userDeployed.object).length > 0 && !!userDeployed.contract) {
-          console.log('will push');
-          users.push(userDeployed);
-        } else {
-          console.log('not pushed');
-          throw('Error')
-        }
+          return {
+            accountAddress: addresses[index],
+            contractAddress: contract._address, 
+            contract,
+            definition
+          }
+        });
+
+        await Promise.all(users);
+
+        // pick the first user
+        const user = await users[0];
+    
+        const contractAttributes = await getUserContractAttributes(user.contractAddress, user.accountAddress);
+  
+        assert(JSON.stringify(contractAttributes) === JSON.stringify(user.definition));
+      } catch (e) {
+        console.log(e);
+        assert(false);        
       }
-
-      assert(users.length === 50);
     })
-    .timeout(30000);
+    .timeout(50000);
+  });
+
+  describe("Change first user public key", () => {
+    
   });
 });
 

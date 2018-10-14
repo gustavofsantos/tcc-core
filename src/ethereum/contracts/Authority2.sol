@@ -4,6 +4,7 @@ contract Authority2 {
   string public authorityCID;
   address public authorityAddress;
 
+  // original contract address => latest contract address
   mapping (address => address) users;
 
   modifier onlyAuthorityAddress() {
@@ -19,17 +20,29 @@ contract Authority2 {
     authorityAddress = msg.sender;
   }
 
-  function registerUser(address userAddress, address userContractAddress) 
+  function registerUser(address originalContractAddress) 
     public onlyAuthorityAddress returns (bool)
   {
     // theres no way to check if an address is a real address, but the process
     // will throw an error if the address isn't valid
     require(
-      userAddress != address(0) && userContractAddress != address(0),
+      originalContractAddress != address(0),
       "Addresses should not be empty"
     );
-    
-    users[userContractAddress] = userAddress;
+
+    if (users[originalContractAddress] != address(0)) {
+      return false;
+    } else {
+      users[originalContractAddress] = originalContractAddress;
+      return true;
+    }
+  }
+
+  function changeLatestContract(address originalContractAddress, address latestContractAddress)
+    public onlyAuthorityAddress returns (bool)
+  {
+    users[originalContractAddress] = latestContractAddress;
+    return true;
   }
 
   function getAuthorityAttributesCID() public view returns (string) {

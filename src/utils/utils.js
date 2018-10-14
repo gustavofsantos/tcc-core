@@ -12,7 +12,6 @@ function getKeyPair() {
 }
 
 function getUser() {
-  const pair = getKeyPair();
   return {
     name: leite.pessoa.nome(),
     id: leite.pessoa.cpf(),
@@ -25,8 +24,8 @@ function getUser() {
     postcode: leite.localizacao.cep(),
     city: leite.localizacao.cidade(),
     province: leite.localizacao.estado(),
-    publicKey: pair.public,
-    privateKey: pair.private
+    publicKey: 'default_public_key',
+    privateKey: 'default_private_key'
   }
 }
 

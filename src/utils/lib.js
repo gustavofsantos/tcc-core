@@ -6,10 +6,22 @@ const crypto = require('crypto');
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
 const { normal, success, error, warning } = require('./logger');
 
-const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
-// const web3 = new Web3(ganache.provider({ gasLimit: 30000000, total_accounts: 50 }));
+const secretKey = 'defaut_secret_key';
+const numberAccounts = 51; // 1 authority + 50 users
+// connect to ganache
+// const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
 
-const mnemonic = "peasant first poem hamster suggest nest decrease stone lonely shed dwarf best";
+// use internal ganache-core
+const web3 = new Web3(ganache.provider({
+  gasLimit: 30000000,
+  total_accounts: numberAccounts,
+  secretKey: secretKey,
+  logger: {
+    log: text => {
+      console.log(text);
+    }
+  }
+}));
 
 const authorityABI = fs.readFileSync('src/ethereum/build/Authority2.abi');
 const authorityBIN = fs.readFileSync('src/ethereum/build/Authority2.bin');
@@ -42,19 +54,27 @@ async function getUserAddresses(n) {
   }
 }
 
-async function createAccount(privateKey) {
+async function createAccount(key) {
   try {
-    if (privateKey) {
-      // const account = await web3.eth.accounts.privateKeyToAccount(privateKey);
-      const account = await web3.eth.personal.newAccount(privateKey);
-      return account;
-    } else {
-      const account = await web3.eth.accounts.create();
-      return account;
-    }
+    const privateKey = key ? key : web3.utils.randomHex(32);
+    const address = await web3.eth.personal.newAccount(privateKey);
+
+    return {
+      privateKey,
+      address
+    };
   } catch (error) {
     console.log(error);
     return error;
+  }
+}
+
+async function unlockAccount(address, privateKey) {
+  try {
+    return await web3.eth.personal.unlockAccount(address, privateKey, 20000);
+  } catch (e) {
+    console.log(e);
+    return e;
   }
 }
 
@@ -86,6 +106,7 @@ async function createAuthorityContract() {
     const contract = new web3.eth.Contract(JSON.parse(authorityABI));
     return contract;
   } catch (e) {
+    process.exit(1);
     return null;
   }
 }
@@ -118,6 +139,7 @@ async function deployAuthorityContract(authorityAddress, authorityContract, auth
     return deployedContract;
   } catch (e) {
     console.log(e);
+    process.exit(1);
     return null;
   }
 }
@@ -144,16 +166,79 @@ async function authorityContractAttributes(authorityContract, callerAddress) {
       cost
     }
   } catch (e) {
+    process.exit(1);
     return null;
   }
 }
 
-async function createUserContract() {
+
+/**
+ * Call the method 'registerUser' in Authority contract
+ * @param {string} userContractAddress 
+ * @param {object} authorityContract 
+ * @param {string} authorityAddress 
+ */
+async function authorityRegisterUser(userContractAddress, authorityContract, authorityAddress) {
   try {
-    const contract = new web3.eth.Contract(JSON.parse(userABI));
+    if (!userContractAddress)
+      throw('User contract address is undefined');
+    if(!authorityContract)
+      throw('Authority contract object is undefined');
+    if(!authorityAddress)
+      throw('Authority account address is undefined');
+    
+    const result = await authorityContract
+      .methods
+      .registerUser(userContractAddress)
+      .call({
+        from: authorityAddress
+      });
+
+    return result;
+  } catch (e) {
+    console.log(e);
+    return e;
+  }
+}
+
+/**
+ * Protocol to change user public key
+ * @param {string} userContractAddress 
+ * @param {object} authorityContract 
+ * @param {string} authorityAddress 
+ * @param {string} newPublicKey 
+ */
+async function authorityChangeUserPublicKey(userContractAddress, authorityContract, authorityAddress, newPublicKey) {
+  try {
+    
+  } catch (e) {
+    
+  }
+}
+
+/**
+ * Protocol to change user public attributes
+ * @param {string} userContractAddress 
+ * @param {object} authorityContract 
+ * @param {string} authorityAddress 
+ * @param {object} newUserAttributes 
+ */
+async function authorityChangeUserAttributes(userContractAddress, authorityContract, authorityAddress, newUserAttributes) {
+  try {
+    
+  } catch (e) {
+    
+  }
+}
+
+async function createUserContract(contractAddress) {
+  try {
+    const contract = contractAddress ? 
+      new web3.eth.Contract(JSON.parse(userABI), contractAddress) : new web3.eth.Contract(JSON.parse(userABI));
     return contract;
   } catch (e) {
     console.log(e);
+    process.exit(1);
     return null;
   }
 }
@@ -192,7 +277,26 @@ async function deployUserContract(userAddress, userContract, userAttributes) {
     return deployedContract;
   } catch (e) {
     console.log(e);
+    process.exit(1);
     return null;
+  }
+}
+
+async function getUserContractAttributes(contractAddress, callerAccountAddress) {
+  try {
+    const contract = await createUserContract(contractAddress);
+    const attributesCID = await contract
+      .methods
+      .getUserAttributes()
+      .call({
+        from: callerAccountAddress
+      });
+
+    const attributesString = await pullFromIPFS(attributesCID);
+
+    return JSON.parse(attributesString);
+  } catch (e) {
+    
   }
 }
 
@@ -209,16 +313,25 @@ function stop() {
 }
 
 module.exports = {
+  // accounts and addresses
   getAuthorityAddress,
   getUserAddresses,
   getAccounts,
   unlockAccountWithInternalMnemonic,
   createAccount,
+  unlockAccount,
+  // authority
   createAuthorityContract,
   deployAuthorityContract,
   authorityContractAttributes,
+  authorityRegisterUser,
+  authorityChangeUserPublicKey,
+  authorityChangeUserAttributes,
+  // user
   createUserContract,
   deployUserContract,
+  getUserContractAttributes,
+  // utils
   waitSystemReady,
   stop
 }
