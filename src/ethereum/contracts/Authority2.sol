@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 contract Authority2 {
   string public authorityCID;
   address public authorityAddress;
+  address[] public originalUserContractAddresses;
 
   // original contract address => latest contract address
   mapping (address => address) users;
@@ -34,6 +35,7 @@ contract Authority2 {
       return false;
     } else {
       users[originalContractAddress] = originalContractAddress;
+      originalUserContractAddresses.push(originalContractAddress);
       return true;
     }
   }
@@ -43,6 +45,18 @@ contract Authority2 {
   {
     users[originalContractAddress] = latestContractAddress;
     return true;
+  }
+
+  function originalContractAddressAtIndex(uint index)
+    public view returns (address)
+  {
+    return originalUserContractAddresses[index];
+  }
+
+  function originalUserContractAddressesLength()
+    public view returns (uint)
+  {
+    return originalUserContractAddresses.length;
   }
 
   function getAuthorityAttributesCID() public view returns (string) {

@@ -3,17 +3,14 @@ const { getUsers, getUser } = require('../src/utils/utils');
 const {
   getAuthorityAddress,
   getUserAddresses,
-  createAccount,
-  unlockAccount,
-  unlockAccountWithInternalMnemonic,
   createAuthorityContract,
   deployAuthorityContract,
   authorityContractAttributes,
   authorityRegisterUser,
-  authorityChangeUserPublicKey,
-  authorityChangeUserAttributes,
+  authorityChangeUserPublicKeyWithUserAccount,
   createUserContract,
   deployUserContract,
+  getUserPublicKey,
   getUserContractAttributes,
   waitSystemReady,
   stop
@@ -74,19 +71,6 @@ describe("TCC-CORE UNIT TEST", () => {
     .timeout(10000);
   });
 
-  // describe("Create one user account", () => {
-  //   it("Should create a Ethereum account", async () => {
-  //     const user = getUser();
-  //     const userAccount = await createAccount(user.privateKey);
-
-  //     console.log(' => ', userAccount);
-
-  //     // should have an address
-  //     assert(!!userAccount);
-  //   })
-  //   .timeout(10000);
-  // });
-
   describe("Create 50 users using 50 accounts previously created", () => {
     let userDefinitions;
 
@@ -104,7 +88,7 @@ describe("TCC-CORE UNIT TEST", () => {
         const contract = await createUserContract();
 
         const deployedContracts = addresses.map(async (userAddress, index) => {
-          const userContract = await deployUserContract(userAddress, contract, userDefinitions[index]);
+          const userContract = await deployUserContract(userAddress, contract, userDefinitions[index], authorityAddress);
           return userContract;
         });
 
@@ -143,8 +127,50 @@ describe("TCC-CORE UNIT TEST", () => {
   });
 
   describe("Change first user public key", () => {
-    
+    it("Shuld call authorityChangeUserPublicKeyWithUserAccount with success", async () => {
+      const user = await users[0];
+      const newPublicKey = 'brand_new_public_key';
+
+      console.log(user);
+
+      const oldUserPublicKey = await getUserPublicKey(user.contractAddress, authorityAddress);
+
+      const newUserContractAddress = await authorityChangeUserPublicKeyWithUserAccount(
+        user.accountAddress,
+        user.contractAddress,
+        authorityContract,
+        authorityAddress,
+        newPublicKey
+      );
+
+      console.log('newUserContractAddress', newUserContractAddress);
+
+      users[0].contractAddress = newUserContractAddress;
+
+      // get the new public key
+      const newUserPublicKey = await getUserPublicKey(newUserContractAddress, authorityAddress);
+
+      console.log('oldUserPublicKey: ', oldUserPublicKey);
+      console.log('newUserPublicKey: ', newUserPublicKey);
+
+      assert(oldUserPublicKey !== newUserPublicKey && newUserPublicKey === newPublicKey);
+    })
+    .timeout(50000);
   });
+
+  it("Should check if Authority is storing the latest version of the contract of the first user", async () => {
+    const user = users[0];
+
+  })
+  .timeout(50000);
+
+  it("Should change again the first user public key", async () => {
+    const user = users[0];
+    const newPublicKey = 'another_new_public_key';
+
+
+  })
+  .timeout(50000);
 });
 
 

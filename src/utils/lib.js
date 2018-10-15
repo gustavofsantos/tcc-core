@@ -203,16 +203,116 @@ async function authorityRegisterUser(userContractAddress, authorityContract, aut
 
 /**
  * Protocol to change user public key
+ * @param {string} userAddress
  * @param {string} userContractAddress 
  * @param {object} authorityContract 
  * @param {string} authorityAddress 
  * @param {string} newPublicKey 
  */
-async function authorityChangeUserPublicKey(userContractAddress, authorityContract, authorityAddress, newPublicKey) {
+async function authorityChangeUserPublicKeyWithUserAccount(
+  userAddress,
+  userContractAddress,
+  authorityContract,
+  authorityAddress,
+  newPublicKey
+) {
+  try {
+    // create a new user contract with the old information
+    const newContract  = await createUserContract();
+
+    // get the old contract
+    const oldContract = await createUserContract(userContractAddress);
+
+    // get the information of the old user contract
+    const oldUserAttributes = await oldContract
+      .methods
+      .getUserAttributes()
+      .call({
+        from: authorityAddress
+      });
+
+    let originalUserContractAddress = await oldContract
+      .methods
+      .getOriginalUserContractAddress()
+      .call({
+        from: authorityAddress
+      });
+
+      
+    console.log('originalUserContractAddress called: ', originalUserContractAddress);
+    
+    // get the old contract address if is the original contract
+    if (!web3.utils.isAddress(originalUserContractAddress) || 
+      originalUserContractAddress === '0x0000000000000000000000000000000000000000'
+    ) {
+      originalUserContractAddress = oldContract._address;
+    }
+    console.log('originalUserContractAddress: ', originalUserContractAddress);
+
+    // pull attributes from IPFS
+    const stringAttributes = await pullFromIPFS(oldUserAttributes);
+    const attributes = JSON.parse(stringAttributes);
+
+    // set the new key
+    attributes.publicKey = newPublicKey;
+    const contractDeployed = await deployUserContract(
+      userAddress,
+      newContract,
+      attributes,
+      authorityAddress,
+      originalUserContractAddress
+    );
+
+    // disable the old contract and link to the new
+    const newContractAddress = contractDeployed._address;
+    console.log('newContractAddress', newContractAddress);
+
+    const haveDisabled = await oldContract
+      .methods
+      .disableAndLinkToNew(newContractAddress)
+      .call({
+        from: authorityAddress // only the authority can call this method
+      });
+    
+    console.log('haveDisabled: ', haveDisabled);
+    
+    if (haveDisabled) {
+      // authority register the new contract
+      const haveChanged = await authorityContract
+        .methods
+        .changeLatestContract(originalUserContractAddress, newContractAddress)
+        .call({
+          from: authorityAddress
+        });
+      
+      if (haveChanged) {
+        // return address of the new contract
+        return newContractAddress;
+      } else {
+        throw('Cant change user contract to the latest version');
+      }
+
+    } else {
+      throw("Cant disable the old contract");
+    }
+  } catch (e) {
+    console.log(e);
+    process.exit(1);
+    return null;
+  }
+}
+
+async function authorityChangeUserPublicKeyWithoutUserAccount(
+  userContractAddress,
+  authorityContract,
+  authorityAddress,
+  newPublicKey
+) {
   try {
     
   } catch (e) {
-    
+    console.log(e);
+    return e;
   }
 }
 
@@ -248,8 +348,17 @@ async function createUserContract(contractAddress) {
  * @param {string} userAddress
  * @param {object} userContract
  * @param {object} userAttributes
+ * @param {string} authorityAddress
+ * @param {string} originalUserContractAddress
  */
-async function deployUserContract(userAddress, userContract, userAttributes) {
+async function deployUserContract(
+  userAddress,
+  userContract,
+  userAttributes,
+  authorityAddress,
+  originalUserContractAddress,
+  secureDevices
+) {
   try {
     const userAttributesCID = await pushToIPFS(userAttributes);
     console.log("userAttributesCID:", userAttributesCID);
@@ -260,7 +369,14 @@ async function deployUserContract(userAddress, userContract, userAttributes) {
       .deploy({
         data: userBIN,
         arguments: [
-          name, id, location, publicKey, userAttributesCID
+          name, 
+          id,
+          location,
+          publicKey,
+          userAttributesCID,
+          authorityAddress,
+          originalUserContractAddress || '',
+          secureDevices
         ]
       })
       .send({
@@ -275,6 +391,30 @@ async function deployUserContract(userAddress, userContract, userAttributes) {
       });
 
     return deployedContract;
+  } catch (e) {
+    console.log(e);
+    process.exit(1);
+    return null;
+  }
+}
+
+/**
+ * Call the method 'getUserPublicKey'
+ * @param {string} contractAddress 
+ * @param {string} callerAccountAddress 
+ */
+async function getUserPublicKey(contractAddress, callerAccountAddress) {
+  try {
+    const contract = await createUserContract(contractAddress);
+
+    const publicKey = await contract
+      .methods
+      .getUserPublicKey()
+      .call({
+        from: callerAccountAddress
+      });
+    
+    return publicKey;
   } catch (e) {
     console.log(e);
     process.exit(1);
@@ -325,11 +465,11 @@ module.exports = {
   deployAuthorityContract,
   authorityContractAttributes,
   authorityRegisterUser,
-  authorityChangeUserPublicKey,
-  authorityChangeUserAttributes,
+  authorityChangeUserPublicKeyWithUserAccount,
   // user
   createUserContract,
   deployUserContract,
+  getUserPublicKey,
   getUserContractAttributes,
   // utils
   waitSystemReady,
