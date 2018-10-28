@@ -31,6 +31,14 @@ contract User2 {
     );
     _;
   }
+
+  modifier onlyIfActive(bool enable) {
+    require (
+      enable == true,
+      "Only enabled contracts can call this"
+    );
+    _;
+  }
   
   constructor (
     string userName,

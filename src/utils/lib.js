@@ -4,17 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
-const { normal, success, error, warning } = require('./logger');
+const { numberAccounts } = require('../../config');
 
 const secretKey = 'defaut_secret_key';
-const numberAccounts = 51; // 1 authority + 50 users
 // connect to ganache
 // const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));
 
 // use internal ganache-core
 const web3 = new Web3(ganache.provider({
   gasLimit: 30000000,
-  total_accounts: numberAccounts,
+  total_accounts: numberAccounts + 1,
   secretKey: secretKey,
   logger: {
     log: text => {
