@@ -1,4 +1,9 @@
+const fs = require('fs');
+
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
+
+const userABI = fs.readFileSync('src/ethereum/build/User3.abi');
+const userBIN = fs.readFileSync('src/ethereum/build/User3.bin');
 
 /**
  * Create the User contract
@@ -39,11 +44,13 @@ async function deployUserContract(
         gas: '3000000'
       })
       .on('receipt', receipt => {
-        console.log('=== User Deployment ===');
-        console.log(receipt);
-        console.log('=== User Deployment ===');
+        // console.log('=== User Deployment ===');
+        // console.log(receipt);
+        // console.log('=== User Deployment ===');
+        // console.log();
       });
 
+    // console.log(userDeployedContract)
     return userDeployedContract;
   } catch (e) {
     return e;

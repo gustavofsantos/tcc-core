@@ -23,9 +23,7 @@ function getUser() {
     neighborhood: leite.localizacao.bairro(),
     postcode: leite.localizacao.cep(),
     city: leite.localizacao.cidade(),
-    province: leite.localizacao.estado(),
-    publicKey: 'default_public_key',
-    privateKey: 'default_private_key'
+    province: leite.localizacao.estado()
   }
 }
 

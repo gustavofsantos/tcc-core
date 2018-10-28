@@ -1,9 +1,14 @@
+const fs = require('fs');
+
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
+
+const authorityABI = fs.readFileSync('src/ethereum/build/Authority3.abi');
+const authorityBIN = fs.readFileSync('src/ethereum/build/Authority3.bin');
 
 /**
  * Create the Authority contract
  */
-async function createAuthorityContract() {
+async function createAuthorityContract(web3) {
   try {
     const contract = new web3.eth.Contract(JSON.parse(authorityABI));
     return contract;
@@ -34,6 +39,7 @@ async function deployAuthorityContract(authorityAddress, authorityContract, auth
         console.log('=== Authority Deployment ===');
         console.log(receipt);
         console.log('=== Authority Deployment ===');
+        console.log();
       });
 
     return deployedContract;
@@ -49,6 +55,12 @@ async function registerUser(authorityAddress, authorityDeployedContract, userCon
       .registerUser(userContractAddress)
       .call({
         from: authorityAddress
+      })
+      .on('receipt', receipt => {
+        // console.log('=== Authority RegisterUser ===');
+        // console.log(receipt);
+        // console.log('=== Authority RegisterUser ===');
+        // console.log();
       });
 
     return true;

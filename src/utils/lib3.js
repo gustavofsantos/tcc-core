@@ -3,10 +3,14 @@ const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
 const userLib = require('./lib_user');
 const authorityLib = require('./lib_authority');
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
-const { numberAccounts, logFile } = require('../../config');
+// const { numberAccounts, logFile } = require('../../config');
+
+const numberAccounts = 5*50 + 5;
+const logFile = 'out.log';
 
 const privateKey = 'default_private_key';
 const publicKey = 'default_public_key';
@@ -27,11 +31,6 @@ const web3 = new Web3(ganache.provider({
   }
 }));
 
-const authorityABI = fs.readFileSync('src/ethereum/build/Authority3.abi');
-const authorityBIN = fs.readFileSync('src/ethereum/build/Authority3.bin');
-const userABI = fs.readFileSync('src/ethereum/build/User3.abi');
-const userBIN = fs.readFileSync('src/ethereum/build/User3.bin');
-
 async function getAddresses() {
   try {
     const addresses = await web3.eth.getAccounts();
@@ -44,8 +43,9 @@ async function getAddresses() {
 async function waitSystemReady() {
   try {
     await waitIpfsReady();
+    return;
   } catch(e) {
-    console.log(e);
+    return e;
   }
 }
 
@@ -66,11 +66,12 @@ async function createUser(userAddress, userPublicKey, userAttributes) {
 
 async function createAuthority(authorityAddress, authorityAttributes) {
   try {
-    const authorityContract = await authorityLib.createAuthorityContract();
+    const authorityContract = await authorityLib.createAuthorityContract(web3);
     const deployedContract = await authorityLib.deployAuthorityContract(authorityAddress, authorityContract, authorityAttributes);
     
     return deployedContract;
   } catch (e) {
+    console.log(e);
     return e;
   }
 }
@@ -115,7 +116,7 @@ async function changeUserAttributes(userAddress, latestUserContract, userAttribu
       newUserContractDeployed._address
     );
 
-    return res;
+    return newUserContractDeployed;
   } catch (e) {
     return e;
   }
@@ -128,6 +129,9 @@ async function changeUserPublicKey(userAddress, latestUserContract, userPublicKe
 
     // get user info
     const userAttrCID = await userLib.userGetCID(authorityAddress, latestUserContract);
+    const userAttributesString = await pullFromIPFS(userAttrCID);
+    const userAttributes = JSON.parse(userAttributesString);
+
     const originalContractAddress = await userLib.userGetOriginalContract(authorityAddress, latestUserContract);
     const latestContractAddress = latestUserContract._address;
 
@@ -136,7 +140,7 @@ async function changeUserPublicKey(userAddress, latestUserContract, userPublicKe
       userAddress,
       newUserContract,
       userPublicKey,
-      userAttrCID,
+      userAttributes,
       originalContractAddress,
       latestContractAddress
     );
@@ -149,7 +153,7 @@ async function changeUserPublicKey(userAddress, latestUserContract, userPublicKe
       newUserContractDeployed._address
     );
 
-    return res;
+    return newUserContractDeployed;
   } catch (e) {
     return e;
   }
