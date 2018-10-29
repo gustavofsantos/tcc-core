@@ -35,8 +35,7 @@ function pushToIPFS(dataToPush) {
         }
       });
     } else {
-      console.log(warning('Trying to push an empty object'));
-      resolve('');
+      reject(`Trying to push an empty object: ${dataToPush}`);
     }
   });
 }
@@ -57,8 +56,7 @@ function pullFromIPFS(cid) {
         }
       })
     } else {
-      console.log(warning("IPFS CID is empty."));
-      resolve('');
+      reject(`IPFS CID is empty: ${cid}`);
     }
   });
 }

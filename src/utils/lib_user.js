@@ -18,6 +18,16 @@ async function createUserContract(web3, contractAddress) {
   }
 }
 
+/**
+ * 
+ * @param {object} web3 
+ * @param {string} userAddress 
+ * @param {object} userContract 
+ * @param {string} userPublicKey 
+ * @param {object} userAttributes 
+ * @param {string} userOriginalContractAddress 
+ * @param {string} userLatestContractAddress 
+ */
 async function deployUserContract(
   web3,
   userAddress,
@@ -25,7 +35,8 @@ async function deployUserContract(
   userPublicKey,
   userAttributes,
   userOriginalContractAddress,
-  userLatestContractAddress) {
+  userLatestContractAddress)
+{
   try {
     const userIPFSCID = await pushToIPFS(userAttributes);
 
@@ -44,73 +55,102 @@ async function deployUserContract(
         gas: '3000000'
       })
       .on('receipt', receipt => {
-        // console.log('=== User Deployment ===');
-        // console.log(receipt);
-        // console.log('=== User Deployment ===');
-        // console.log();
+        console.log('=== User: deploy ===');
+        console.log('gasUsed: ', receipt.gasUsed);
+        console.log();
       });
 
     // console.log(userDeployedContract)
     return userDeployedContract;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userRegisterAuthority(userAddress, userDeployedContract, authorityAddress) {
+
   try {
-    await userDeployedContract
-      .methods
-      .registerToAuthority(authorityAddress)
-      .call({
-        from: userAddress
-      })
+    const method = userDeployedContract.methods.registerToAuthority(authorityAddress);
+    const result = await method.call({ from: userAddress });
+    const estimateGas = await method.estimateGas({ from : userAddress });
+    
+    console.log('=== User: registerToAuthority ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
+/**
+ * 
+ * @param {string} callerAddress 
+ * @param {object} userDeployedContract 
+ * @param {string} authorityAddress 
+ */
 async function userIsRegisteredByAuthority(callerAddress, userDeployedContract, authorityAddress) {
+  console.log('--- userIsRegisteredByAuthority ---');
+  console.log('callerAddress: ', callerAddress);
+  console.log('authorityAddress: ', authorityAddress);
+  console.log();
   try {
-    const result = await userDeployedContract
-      .methods
-      .isRegisteredByAuthority(authorityAddress)
-      .call({
-        from: callerAddress
-      });
+    const method = userDeployedContract.methods.isRegisteredByAuthority(authorityAddress);
+    const result = await method.call({ from: callerAddress });
+
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: isRegisteredByAuthority ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
 
     return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userRegisterSecureDevice(userAddress, userDeployedContract, secureDevicePublicKey) {
   try {
-    await userDeployedContract
-      .methods
-      .setSecureDevicePublicKey(secureDevicePublicKey)
-      .call({
-        from: userAddress
-      });
+    const method = userDeployedContract.methods.setSecureDevicePublicKey(secureDevicePublicKey);
+    const result = await method.call({ from: userAddress });
+
+    const estimateGas = await method.estimateGas({ from : userAddress });
+
+    console.log('=== User: setSecureDevicePublicKey ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log()
 
     return true;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userDisableSecureDevice(userAddress, userDeployedContract, secureDevicePublicKey) {
   try {
-    await userDeployedContract
-      .methods
-      .disableSecureDevice(secureDevicePublicKey)
-      .call({
-        from: userAddress
-      });
+    const method = userDeployedContract.methods.disableSecureDevice(secureDevicePublicKey);
+    const result = await method.call({ from: userAddress });
+
+    const estimateGas = await method.estimateGas({ from : userAddress });
+
+    console.log('=== User: disableSecureDevice ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
 
     return true;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
@@ -127,120 +167,160 @@ async function userSignData(userAddress, userDeployedContract, userPrivateKey, d
       author: userAddress
     });
 
-    const couldStore = await userDeployedContract
-      .methods
-      .signData(ipfsCID)
-      .call({
-        from: userAddress
-      });
+    const method = userDeployedContract.methods.signData(ipfsCID);
+    const result = await method.call({ from: userAddress });
 
-    return couldStore;
+    const estimateGas = await method.estimateGas({ from : userAddress });
+
+    console.log('=== User: signData ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userIsDataSigned(callerAddress, userDeployedContract, dataSignedCID) {
   try {
-    const result = await userDeployedContract
-      .methods
-      .isSigned(dataSignedCID)
-      .call({
-        from: callerAddress
-      });
+
+    const method = userDeployedContract.methods.isSigned(dataSignedCID);
+    const result = await method.call({ from: callerAddress });
+    
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: isSigned ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
 
     return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userGetPublicKey(callerAddress, userDeployedContract) {
   try {
-    const publicKey = await userDeployedContract
-      .methods
-      .getPublicKey()
-      .call({
-        from: callerAddress
-      });
+    const method =  userDeployedContract.methods.getPublicKey();
+    const result = await method.call({ from: callerAddress });
 
-    return publicKey;
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: getPublicKey ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userGetCID(callerAddress, userDeployedContract) {
   try {
-    const cid = await userDeployedContract
-      .methods
-      .getCID()
-      .call({
-        from: callerAddress
-      });
 
-    return cid;
+    const method = userDeployedContract.methods.getCID();
+    const result = await method.call({ from: callerAddress });
+
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: getCID ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userGetLastContract(callerAddress, userDeployedContract) {
   try {
-    const lastContract = await userDeployedContract
-      .methods
-      .getLastContract()
-      .call({
-        from: callerAddress
-      });
 
-    return lastContract;
+    const method = userDeployedContract.methods.getLastContract();
+    const result = await method.call({ from: callerAddress });
+
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: getLastContract ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userGetNextContract(callerAddress, userDeployedContract) {
   try {
-    const nextContract = await userDeployedContract
-      .methods
-      .getNextContract()
-      .call({
-        from: callerAddress
-      });
 
-    return nextContract;
+    const method = userDeployedContract.methods.getNextContract();
+    const result = await method.call({ from: callerAddress });
+
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: getNextContract ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userGetOriginalContract(callerAddress, userDeployedContract) {
   try {
-    const originalContract = await userDeployedContract
-      .methods
-      .getOriginalContract()
-      .call({
-        from: callerAddress
-      });
 
-    return originalContract;
+    const method = userDeployedContract.methods.getOriginalContract();
+    const result = await method.call({ from: callerAddress });
+
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: getOriginalContract ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
+
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }
 
 async function userGetOwner(callerAddress, userDeployedContract) {
   try {
-    const ownerAddress = await userDeployedContract
-      .methods
-      .getOwner()
-      .call({
-        from: callerAddress
-      });
 
-    return ownerAddress;
+    const method = userDeployedContract.methods.getOwner();
+    const result = await method.call({ from: callerAddress });
+
+    const estimateGas = await method.estimateGas({ from : callerAddress });
+
+    console.log('=== User: getOwner ===');
+    console.log('estimateGas: ', estimateGas);
+    console.log();
+
+    return result;
+
   } catch (e) {
+    console.log(e);
+    process.exit(1);
     return e;
   }
 }

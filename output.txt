@@ -1,0 +1,83 @@
+
+> tcc-core@1.0.0 testAuthority3 /home/gsantos/Workspace/tcc-core
+> npm run compileAuthority3 ; npm run compileUser3 ; mocha --bail test/Authority3.test.js
+
+
+> tcc-core@1.0.0 compileAuthority3 /home/gsantos/Workspace/tcc-core
+> solc -o ./src/ethereum/build ./src/ethereum/contracts/Authority3.sol --bin --abi --overwrite
+
+
+> tcc-core@1.0.0 compileUser3 /home/gsantos/Workspace/tcc-core
+> solc -o ./src/ethereum/build ./src/ethereum/contracts/User3.sol --bin --abi --overwrite
+
+
+
+  TCC-CORE SINGLE AUTHORITY-USER UNIT TEST
+Swarm listening on /ip4/127.0.0.1/tcp/4003/ws/ipfs/QmZJuoW98KjdpxWpPZTtMUaGQdoRJ3rmgCdAhEsipZky3Y
+Swarm listening on /ip4/127.0.0.1/tcp/4002/ipfs/QmZJuoW98KjdpxWpPZTtMUaGQdoRJ3rmgCdAhEsipZky3Y
+Swarm listening on /ip4/192.168.0.100/tcp/4002/ipfs/QmZJuoW98KjdpxWpPZTtMUaGQdoRJ3rmgCdAhEsipZky3Y
+    Get Authority and User addresses
+      ✓ Should get a valid Ethereum address (377ms)
+    Create and deploy Authority contract
+
+  Transaction: 0x9a10260d86bb18242424506b76d4875319b9dcb5fc2ef089bde74878d702b152
+  Contract created: 0xc5b659ad42c3a9c6256dbd9230f6136819abe928
+  Gas usage: 360739
+  Block Number: 1
+  Block Time: Sun Oct 28 2018 23:37:07 GMT-0300 (-03)
+
+=== Authority: deploy ===
+gasUsed:  360739
+
+      ✓ Should create Authority contract (368ms)
+    Create and deploy User contract
+
+  Transaction: 0xaf47433c8a5a567478e1d3db604fbd8246ca34977acdb448092bd5250a4c7747
+  Contract created: 0x58dfe5745835998199e47575c2e8337654aa9698
+  Gas usage: 1850772
+  Block Number: 2
+  Block Time: Sun Oct 28 2018 23:37:07 GMT-0300 (-03)
+
+=== User: deploy ===
+gasUsed:  1850772
+
+      ✓ Should create User contract (309ms)
+    Test operations over user contract
+--- registerUser ---
+userAddress:  0x765d389CAd152a03017f968b6329D7676f5E5d13
+authorityAddress 0xbB080F7B1E10D9FAEA83C6992F29db0b54B4416e
+
+=== User: registerToAuthority ===
+estimateGas:  46221
+
+=== Authority: registerUser ===
+estimateGas:  44603
+      ✓ Should register User to the Authority (127ms)
+=== User: getCID ===
+estimateGas:  23119
+
+=== User: getOriginalContract ===
+estimateGas:  21920
+
+
+  Transaction: 0xc7dcc628f82764056952e1279ddbbaf621675a14311a1a0c93241d0ea62124a3
+  Contract created: 0xf90faab082e9b65a10339389155be59253b5e7ce
+  Gas usage: 1866796
+  Block Number: 3
+  Block Time: Sun Oct 28 2018 23:37:07 GMT-0300 (-03)
+
+=== User: deploy ===
+gasUsed:  1866796
+
+=== Authority: disableAndLinkToNew (User) ===
+estimateGas:  48896
+=== Authority: changeUserLatestContract ===
+estimateGas:  43700
+=== User: getPublicKey ===
+estimateGas:  22808
+
+      ✓ Should replace User public key (481ms)
+
+
+  5 passing (3s)
+

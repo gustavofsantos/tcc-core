@@ -11,17 +11,93 @@ const {
   changeUserPublicKey,
   getAddresses,
   waitSystemReady,
-  stop
+  stop,
+  isAddressValid
 } = require('../src/utils/lib3');
 
-const { userSignData, userGetPublicKey } = require('../src/utils/lib_user');
+
+
+const libUser = require('../src/utils/lib_user');
+const libAuthority = require('../src/utils/lib_authority');
 
 const numberAuthorities = 5;
 const numberUsersPerAuthority = 50;
 const defaultPublicKey = 'default-public-key';
 const defaultPrivateKey = 'default-private-key';
 
-describe("TCC-CORE UNIT TEST", function () {
+describe("TCC-CORE SINGLE AUTHORITY-USER UNIT TEST", function() {
+  this.timeout("5000");
+
+  const authority = {};
+  const user = {};
+
+  before(async function() {
+    await waitSystemReady();
+  });
+
+  describe("Get Authority and User addresses", function() {
+    it("Should get a valid Ethereum address", async function() {
+      const addresses = await getAddresses();
+      authority.address = addresses[0];
+      user.address = addresses[1];
+
+      assert(isAddressValid(authority.address) && isAddressValid(user.address));
+    });
+  });
+
+  describe("Create and deploy Authority contract", function() {
+    it("Should create Authority contract", async function() {
+      try {
+        authority.contract = await createAuthority(authority.address, getUser());
+        assert(authority.contract);
+      } catch (e) {
+        console.log(e);
+        assert(false);
+      }
+    });
+  });
+
+  describe("Create and deploy User contract", function() {
+    it("Should create User contract", async function() {
+      try {
+        user.contract = await createUser(user.address, defaultPublicKey, getUser());
+        assert(user.contract);
+      } catch (e) {
+        console.log(e);
+        assert(false);
+      }
+    });
+  });
+
+  describe("Test operations over user contract", function() {
+    it("Should register User to the Authority", async function() {
+      try {
+        const res = await registerUser(user.contract, user.address, authority.contract, authority.address);
+        assert(res);
+      } catch (e) {
+        console.log(e);
+        assert(false);
+      }
+    });
+
+    it("Should replace User public key", async function() {
+      const newPublicKey = 'new-public-key'
+      try {
+        const newUserContract = await changeUserPublicKey(user.address, user.contract, newPublicKey, authority.address, authority.contract);
+
+        // check if was replaced
+        const userNewKey = await libUser.userGetPublicKey(authority.address, newUserContract);
+
+        assert(userNewKey === newPublicKey);
+      } catch (e) {
+        console.log(e);
+        assert(false);
+      }
+    });
+  });
+})
+
+/* describe("TCC-CORE UNIT TEST", function () {
 
   this.timeout(50000);
 
@@ -45,6 +121,7 @@ describe("TCC-CORE UNIT TEST", function () {
       authorities = await authorityAddresses.map(async address => { 
         try {
           const user = getUser();
+          console.log('authority address: ', address);
           const authority = await createAuthority(address, user);
           return authority;
         } catch (e) {
@@ -77,32 +154,18 @@ describe("TCC-CORE UNIT TEST", function () {
   });
 
   describe("Deploy 50 users per authority", function() {
-    it("Should Authority 1 register 50 users", async function () {
+    it("Should deploy 50 users", async function() {
       try {
-        const authorityContract = await authorities[0];
-        const authorityAddress = authorityAddresses[0];
-
         const userContracts = userAddresses
           .slice(0, 50)
-          .map( async userAddress => {
-            // create user
-            const userContract = await createUser(userAddress, defaultPublicKey, getUser());
+          .map(userAddress => ({
+            futureContract: createUser(userAddress, defaultPublicKey, getUser()),
+            address: userAddress
+          }));
 
-            // register user
-            const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
-
-            if (res) {
-              return userContract;
-            } else {
-              return null;
-            }
-          });
-
-        await Promise.all(userContracts);
         users = users.concat(userContracts);
 
-        // console.log(userContracts);
-        assert(userContracts.length === 50);
+        assert(users.length === 50);
       } catch (e) {
         console.log(e);
         assert(false);
@@ -110,32 +173,26 @@ describe("TCC-CORE UNIT TEST", function () {
     })
     .timeout(260000);
 
-    it("Should Authority 2 register 50 users", async function () {
+    it("Should register 50 users into first Authority", async function() {
       try {
-        const authorityContract = await authorities[1];
-        const authorityAddress = authorityAddresses[1];
+        const authorityAddress = authorityAddresses[0];
+        const authorityContract = await authorities[0];
 
-        const userContracts = userAddresses
-          .slice(50, 100)
-          .map( async userAddress => {
-            // create user
-            const userContract = await createUser(userAddress, defaultPublicKey, getUser());
+        users.forEach(async user => {
+          const userContract = await user.futureContract;
+          const userAddress = user.address;
+          console.log('registering: ', userAddress);
+          await registerUser(userContract, userAddress, authorityContract, authorityAddress);
+        });
 
-            // register user
-            const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
+        // const firstUser = users[0];
+        // const firstUserContract = await firstUser.futureContract;
+        // const firstUserAddress = firstUser.address;
+        // const couldRegisterFirst = await libUser.userIsRegisteredByAuthority(firstUserAddress, firstUserContract, authorityAddress);
 
-            if (res) {
-              return userContract;
-            } else {
-              return null;
-            }
-          });
+        // console.log('couldRegisterFirst', couldRegisterFirst);
 
-        await Promise.all(userContracts);
-        users = users.concat(userContracts);
-
-        // console.log(userContracts);
-        assert(userContracts.length === 50);
+        assert(true);
       } catch (e) {
         console.log(e);
         assert(false);
@@ -143,108 +200,181 @@ describe("TCC-CORE UNIT TEST", function () {
     })
     .timeout(260000);
 
-    it("Should authority 3 register 50 users", async function () {
-      try {
-        const authorityContract = await authorities[2];
-        const authorityAddress = authorityAddresses[2];
 
-        const userContracts = userAddresses
-          .slice(100, 150)
-          .map( async userAddress => {
-            // create user
-            const userContract = await createUser(userAddress, defaultPublicKey, getUser());
+    // it("Should Authority 1 register 50 users", async function () {
+    //   try {
+    //     const authorityContract = await authorities[0];
+    //     const authorityAddress = authorityAddresses[0];
 
-            // register user
-            const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
+    //     const userContracts = userAddresses
+    //       .slice(0, 50)
+    //       .map(async userAddress => {
+    //         // create user
+    //         const userContract = await createUser(userAddress, defaultPublicKey, getUser());
 
-            if (res) {
-              return userContract;
-            } else {
-              return null;
-            }
-          });
+    //         // register user
+    //         const res = await registerUser(userContract, userAddress, authorityContract, authorityAddress);
 
-        await Promise.all(userContracts);
-        users = users.concat(userContracts);
+    //         if (res) {
+    //           return userContract;
+    //         } else {
+    //           return null;
+    //         }
+    //       });
 
-        // console.log(userContracts);
-        assert(userContracts.length === 50);
-      } catch (e) {
-        console.log(e);
-        assert(false);
-      }
-    })
-    .timeout(260000);
+    //     await Promise.all(userContracts);
 
-    it("Should authority 4 register 50 users", async function () {
-      try {
-        const authorityContract = await authorities[3];
-        const authorityAddress = authorityAddresses[3];
+    //     const usersDifferentNull = userContracts.filter(async user => await user != null);
+    //     if (usersDifferentNull.length === 50) {
+    //       users = users.concat(userContracts);
+    //       // console.log(userContracts);
+    //       assert(userContracts.length === 50);
+    //     } else {
+    //       assert(false);
+    //     }
+    //   } catch (e) {
+    //     console.log(e);
+    //     assert(false);
+    //   }
+    // })
+    // .timeout(260000);
 
-        const userContracts = userAddresses
-          .slice(150, 200)
-          .map( async userAddress => {
-            // create user
-            const userContract = await createUser(userAddress, defaultPublicKey, getUser());
 
-            // register user
-            const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
+    // it("Should Authority 2 register 50 users", async function () {
+    //   try {
+    //     const authorityContract = await authorities[1];
+    //     const authorityAddress = authorityAddresses[1];
 
-            if (res) {
-              return userContract;
-            } else {
-              return null;
-            }
-          });
+    //     const userContracts = userAddresses
+    //       .slice(50, 100)
+    //       .map( async userAddress => {
+    //         // create user
+    //         const userContract = await createUser(userAddress, defaultPublicKey, getUser());
 
-        await Promise.all(userContracts);
-        users = users.concat(userContracts);
+    //         // register user
+    //         const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
 
-        assert(userContracts.length === 50);
-      } catch (e) {
-        console.log(e);
-        assert(false);
-      }
-    })
-    .timeout(260000);
+    //         if (res) {
+    //           return userContract;
+    //         } else {
+    //           return null;
+    //         }
+    //       });
 
-    it("Should authority 5 register 50 users", async function () {
-      try {
-        const authorityContract = await authorities[4];
-        const authorityAddress = authorityAddresses[4];
+    //     await Promise.all(userContracts);
+    //     users = users.concat(userContracts);
 
-        const userContracts = userAddresses
-          .slice(200, 250)
-          .map( async userAddress => {
-            // create user
-            const userContract = await createUser(userAddress, defaultPublicKey, getUser());
+    //     // console.log(userContracts);
+    //     assert(userContracts.length === 50);
+    //   } catch (e) {
+    //     console.log(e);
+    //     assert(false);
+    //   }
+    // })
+    // .timeout(260000);
 
-            // register user
-            const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
+    // it("Should authority 3 register 50 users", async function () {
+    //   try {
+    //     const authorityContract = await authorities[2];
+    //     const authorityAddress = authorityAddresses[2];
 
-            if (res) {
-              return userContract;
-            } else {
-              return null;
-            }
-          });
+    //     const userContracts = userAddresses
+    //       .slice(100, 150)
+    //       .map( async userAddress => {
+    //         // create user
+    //         const userContract = await createUser(userAddress, defaultPublicKey, getUser());
 
-        await Promise.all(userContracts);
-        users = users.concat(userContracts);
+    //         // register user
+    //         const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
 
-        assert(userContracts.length === 50);
-      } catch (e) {
-        console.log(e);
-        assert(false);
-      }
-    })
-    .timeout(260000);
+    //         if (res) {
+    //           return userContract;
+    //         } else {
+    //           return null;
+    //         }
+    //       });
 
-    it(`Verify if has ${numberAuthorities*numberUsersPerAuthority} users deployed`, async function() {
-      console.log('users.length', users.length);
-      assert(users.length === numberAuthorities*numberUsersPerAuthority);
-    })
-    .timeout(260000);
+    //     await Promise.all(userContracts);
+    //     users = users.concat(userContracts);
+
+    //     // console.log(userContracts);
+    //     assert(userContracts.length === 50);
+    //   } catch (e) {
+    //     console.log(e);
+    //     assert(false);
+    //   }
+    // })
+    // .timeout(260000);
+
+    // it("Should authority 4 register 50 users", async function () {
+    //   try {
+    //     const authorityContract = await authorities[3];
+    //     const authorityAddress = authorityAddresses[3];
+
+    //     const userContracts = userAddresses
+    //       .slice(150, 200)
+    //       .map( async userAddress => {
+    //         // create user
+    //         const userContract = await createUser(userAddress, defaultPublicKey, getUser());
+
+    //         // register user
+    //         const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
+
+    //         if (res) {
+    //           return userContract;
+    //         } else {
+    //           return null;
+    //         }
+    //       });
+
+    //     await Promise.all(userContracts);
+    //     users = users.concat(userContracts);
+
+    //     assert(userContracts.length === 50);
+    //   } catch (e) {
+    //     console.log(e);
+    //     assert(false);
+    //   }
+    // })
+    // .timeout(260000);
+
+    // it("Should authority 5 register 50 users", async function () {
+    //   try {
+    //     const authorityContract = await authorities[4];
+    //     const authorityAddress = authorityAddresses[4];
+
+    //     const userContracts = userAddresses
+    //       .slice(200, 250)
+    //       .map( async userAddress => {
+    //         // create user
+    //         const userContract = await createUser(userAddress, defaultPublicKey, getUser());
+
+    //         // register user
+    //         const res = await registerUser(userContract._address, userAddress, authorityContract, authorityAddress);
+
+    //         if (res) {
+    //           return userContract;
+    //         } else {
+    //           return null;
+    //         }
+    //       });
+
+    //     await Promise.all(userContracts);
+    //     users = users.concat(userContracts);
+
+    //     assert(userContracts.length === 50);
+    //   } catch (e) {
+    //     console.log(e);
+    //     assert(false);
+    //   }
+    // })
+    // .timeout(260000);
+
+    // it(`Verify if has ${numberAuthorities*numberUsersPerAuthority} users deployed`, async function() {
+    //   console.log('users.length', users.length);
+    //   assert(users.length === numberAuthorities*numberUsersPerAuthority);
+    // })
+    // .timeout(260000);
   });
 
   describe("Change all users public key", function() {
@@ -253,19 +383,19 @@ describe("TCC-CORE UNIT TEST", function () {
     it("Change public key from 0 to 50", async function() {
       try {
         const authorityAddress = authorityAddresses[0];
-        const firstUserAddresses = userAddresses.slice(0, 50);
-        const firstUsers = users.slice(0, 50);
+        const authorityContract = await authorities[0];
 
-        const newUsers = firstUserAddresses.map(async (userAddress, index) => {
-          try {
-            const newUser = await changeUserPublicKey(userAddress, firstUsers[index]._address, newPublicKey, authorityAddress);
-            return newUser;
-          } catch(e) {
-            return null;
-          }
-        });
+        const newUsers = users
+          .slice(0, 50)
+          .map(async user => {
+            const userAddress = user.address;
+            const userContract = await user.futureContract;
+            return await changeUserPublicKey(userAddress, userContract, newPublicKey, authorityAddress, authorityContract);
+          });
 
         await Promise.all(newUsers);
+
+        console.log(newUsers);
 
         assert(newUsers.length === 50);
       } catch (e) {
@@ -275,7 +405,7 @@ describe("TCC-CORE UNIT TEST", function () {
     })
     .timeout(260000);
 
-    it("Try to change public key from 0 to 50 with another authority", async function() {
+    it("Try to change public key from users 0 to 50 with another authority", async function() {
       try {
         const authorityAddress = authorityAddresses[1];
         const firstUserAddresses = userAddresses.slice(0, 50);
@@ -310,7 +440,7 @@ describe("TCC-CORE UNIT TEST", function () {
       try {
         const userAddress = userAddresses[0];
         const userContract = users[0];
-        const couldSign = await userSignData(userAddress, userContract, defaultPrivateKey, 'some data');
+        const couldSign = await libUser.userSignData(userAddress, userContract, defaultPrivateKey, 'some data');
         
         assert(couldSign);
       } catch (e) {
@@ -320,4 +450,4 @@ describe("TCC-CORE UNIT TEST", function () {
     })
     .timeout(260000);
   });
-});
+}); */

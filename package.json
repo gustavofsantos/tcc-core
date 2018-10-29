@@ -17,7 +17,7 @@
     "test": "node test/Authority.test.js",
     "testAuthority": "mocha --bail test/Authority.test.js",
     "testAuthority2": "mocha --bail test/Authority2.test.js",
-    "testAuthority3": "mocha --bail test/Authority3.test.js"
+    "testAuthority3": "npm run compileAuthority3 ; npm run compileUser3 ; mocha --bail test/Authority3.test.js"
   },
   "author": "",
   "license": "ISC",

@@ -13,6 +13,7 @@ async function createAuthorityContract(web3) {
     const contract = new web3.eth.Contract(JSON.parse(authorityABI));
     return contract;
   } catch (e) {
+    console.log(e);
     process.exit(1);
     return null;
   }
@@ -25,6 +26,7 @@ async function createAuthorityContract(web3) {
  * @param {object} authorityAttributes
  */
 async function deployAuthorityContract(authorityAddress, authorityContract, authorityAttributes) {
+
   try {
     const authorityIPFSCID = await pushToIPFS(authorityAttributes);
     const deployedContract = await authorityContract
@@ -36,68 +38,77 @@ async function deployAuthorityContract(authorityAddress, authorityContract, auth
         gas: '3000000'
       })
       .on('receipt', receipt => {
-        console.log('=== Authority Deployment ===');
-        console.log(receipt);
-        console.log('=== Authority Deployment ===');
+        console.log('=== Authority: deploy ===');
+        console.log('gasUsed: ', receipt.gasUsed);
         console.log();
       });
 
     return deployedContract;
   } catch (e) {
-    return e;
+    console.log(e);
+    process.exit(1);
+    return null;
   }
 }
 
 async function registerUser(authorityAddress, authorityDeployedContract, userContractAddress) {
   try {
-    await authorityDeployedContract
-      .methods
-      .registerUser(userContractAddress)
-      .call({
-        from: authorityAddress
-      })
-      .on('receipt', receipt => {
-        // console.log('=== Authority RegisterUser ===');
-        // console.log(receipt);
-        // console.log('=== Authority RegisterUser ===');
-        // console.log();
-      });
+
+    const method = authorityDeployedContract.methods.registerUser(userContractAddress);
+    const result = await method.call({ from: authorityAddress });
+
+    const estimateGas = await method.estimateGas({ from : authorityAddress });
+
+    console.log('=== Authority: registerUser ===');
+    console.log('estimateGas: ', estimateGas);
 
     return true;
   } catch (e) {
-    return e;
+    console.log(e);
+    process.exit(0);
+    return null;
   }
 }
 
+/**
+ * 
+ * @param {string} authorityAddress 
+ * @param {object} authorityDeployedContract 
+ * @param {object} userDeployedContract 
+ * @param {string} originalUserContractAddress 
+ * @param {string} newUserContractAddress 
+ */
 async function changeUserLatestContract(
   authorityAddress,
   authorityDeployedContract,
   userDeployedContract,
-  originalUserContract,
-  newUserContract
+  originalUserContractAddress,
+  newUserContractAddress
 ) {
   try {
 
-    await userDeployedContract
-      .methods
-      .disableAndLinkToNew(newUserContract)
-      .call({
-        from: authorityAddress
-      });
+    const method1 = userDeployedContract.methods.disableAndLinkToNew(newUserContractAddress);
+    const result1 = await method1.call({ from: authorityAddress });
 
-    await authorityDeployedContract
-      .methods
-      .changeUserLatestContract(originalUserContract, newUserContract)
-      .call({
-        from: authorityAddress
-      });
+    const method2 = authorityDeployedContract.methods.changeUserLatestContract(originalUserContractAddress, newUserContractAddress);
+    const result2 = await method2.call({ from: authorityAddress });
+
+    const estimateGas1 = await method1.estimateGas({ from: authorityAddress });
+    const estimateGas2 = await method2.estimateGas({ from: authorityAddress });
+
+    console.log('=== Authority: disableAndLinkToNew (User) ===');
+    console.log('estimateGas: ', estimateGas1);
+
+    console.log('=== Authority: changeUserLatestContract ===');
+    console.log('estimateGas: ', estimateGas2);
 
     return true;
   } catch (e) {
-    return e;
+    console.log(e);
+    process.exit(1);
+    return null;
   }
 }
-
 
 module.exports = {
   createAuthorityContract,

@@ -25,11 +25,19 @@ const web3 = new Web3(ganache.provider({
   secretKey: privateKey,
   logger: {
     log: text => {
-      // console.log(text);
-      fs.writeFileSync(logFile, text, 'utf8');
+      console.log(text);
+      // fs.writeFileSync(logFile, text, 'utf8');
     }
   }
 }));
+
+web3.eth.subscribe('logs', {}, (error, result) => {
+  if (error) {
+    console.log(error);
+  } else {
+    console.log(result);
+  }
+})
 
 async function getAddresses() {
   try {
@@ -53,6 +61,12 @@ function stop() {
   stopIPFS();
 }
 
+/**
+ * 
+ * @param {string} userAddress 
+ * @param {string} userPublicKey 
+ * @param {object} userAttributes 
+ */
 async function createUser(userAddress, userPublicKey, userAttributes) {
   try {
     const userContract = await userLib.createUserContract(web3);
@@ -64,6 +78,11 @@ async function createUser(userAddress, userPublicKey, userAttributes) {
   }
 }
 
+/**
+ * 
+ * @param {string} authorityAddress 
+ * @param {object} authorityAttributes 
+ */
 async function createAuthority(authorityAddress, authorityAttributes) {
   try {
     const authorityContract = await authorityLib.createAuthorityContract(web3);
@@ -72,22 +91,44 @@ async function createAuthority(authorityAddress, authorityAttributes) {
     return deployedContract;
   } catch (e) {
     console.log(e);
-    return e;
+    return null;
   }
 }
 
-async function registerUser(userContractAddress, userAddress, authorityContract, authorityAddress) {
+/**
+ * 
+ * @param {object} userContract 
+ * @param {string} userAddress 
+ * @param {object} authorityContract 
+ * @param {string} authorityAddress
+ * @returns {boolean}
+ */
+async function registerUser(userContract, userAddress, authorityContract, authorityAddress) {
+  console.log('--- registerUser ---');
+  console.log('userAddress: ', userAddress);
+  console.log('authorityAddress', authorityAddress);
+  console.log();
+
   // register user at authority
   try {
-    await userLib.userRegisterAuthority(userAddress, userContract, authorityAddress);
-    await authorityLib.registerUser(authorityAddress, authorityContract, userContractAddress)
-    
-    return true;
+    const userContractAddress = userContract._address;
+    const resUser = await userLib.userRegisterAuthority(userAddress, userContract, authorityAddress);
+    const resAuthority = await authorityLib.registerUser(authorityAddress, authorityContract, userContractAddress);
+    return resUser && resAuthority;
   } catch (e) {
-    return e;
+    console.log(e);
+    return null;
   }
 }
 
+/**
+ * 
+ * @param {string} userAddress 
+ * @param {object} latestUserContract 
+ * @param {object} userAttributes 
+ * @param {string} authorityAddress 
+ * @param {object} authorityContract 
+ */
 async function changeUserAttributes(userAddress, latestUserContract, userAttributes, authorityAddress, authorityContract) {
   try {
     // create a new user contract
@@ -118,11 +159,22 @@ async function changeUserAttributes(userAddress, latestUserContract, userAttribu
 
     return newUserContractDeployed;
   } catch (e) {
-    return e;
+    console.log(e);
+    return null;
   }
 }
 
-async function changeUserPublicKey(userAddress, latestUserContract, userPublicKey, authorityAddress) {
+/**
+ * 
+ * @param {string} userAddress 
+ * @param {object} latestUserContract 
+ * @param {string} userPublicKey 
+ * @param {string} authorityAddress
+ * @param {object} authorityContract
+ * @returns {object}
+ */
+async function changeUserPublicKey(userAddress, latestUserContract, userPublicKey, authorityAddress, authorityContract) {
+
   try {
     // create a new user contract
     const newUserContract = await userLib.createUserContract(web3);
@@ -153,10 +205,19 @@ async function changeUserPublicKey(userAddress, latestUserContract, userPublicKe
       newUserContractDeployed._address
     );
 
-    return newUserContractDeployed;
+    return newUserContractDeployed
   } catch (e) {
-    return e;
+    console.log(e);
+    return null;
   }
+}
+
+/**
+ * Check if an address is a valid Ethereum address
+ * @param {string} address Ethereum address
+ */
+function isAddressValid(address) {
+  return web3.utils.isAddress(address);
 }
 
 
@@ -168,5 +229,6 @@ module.exports = {
   changeUserPublicKey,
   getAddresses,
   waitSystemReady,
-  stop
+  stop,
+  isAddressValid
 }

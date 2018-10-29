@@ -2,6 +2,9 @@ pragma solidity ^0.4.24;
 
 contract User3 {
 
+  event AuthorityCall(address caller, address owner);
+  event UserCall(address caller, address owner);
+
   // REQUIRED TO ALL CONTRACTS
   address owner;
   address lastContract;
@@ -18,16 +21,18 @@ contract User3 {
 
   // MODIFIERS
   modifier onlyUser(address caller) {
+    emit UserCall(caller, owner);
     require(
-      caller == owner && enable == true,
+      caller == owner,
       "Only the user that own this contract can call this"
     );
     _;
   }
 
   modifier onlyAuthority(address caller) {
+    emit AuthorityCall(caller, owner);
     require(
-      authorities[caller] == true && enable == true,
+      authorities[caller] == true,
       "Only the authority that has registered this contract can call this"
     );
     _;
@@ -35,8 +40,40 @@ contract User3 {
 
   modifier onlyIfNotRegisteredAt(address authority) {
     require (
-      authorities[authority] && enable == true,
+      authorities[authority] != true,
       "This only can be called if not registered"
+    );
+    _;
+  }
+
+  modifier onlyEnabled() {
+    require(
+      enable == true,
+      "The contract need to be enabled"
+    );
+    _;
+  }
+
+  modifier onlyDeviceNotSetted(string devicePublicKey) {
+    require(
+      secureDevicesPublicKeys[devicePublicKey] != true,
+      "Secure device public key already exists"
+    );
+    _;
+  }
+
+  modifier onlyDeviceSetted(string devicePublicKey) {
+    require(
+      secureDevicesPublicKeys[devicePublicKey] == true,
+      "Secure device public key not exists"
+    );
+    _;
+  }
+
+  modifier onlyNotSigned(string cidDataSigned) {
+    require(
+      signed[cidDataSigned] != true,
+      "Data is already signed"
     );
     _;
   }
@@ -53,27 +90,59 @@ contract User3 {
     nextContract = address(0);
   }
 
-  function registerToAuthority(address authorityAddress) public onlyUser(msg.sender) onlyIfNotRegisteredAt(authorityAddress) returns (bool) {
-    if (authorities[authorityAddress] != true) {
-      authorities[authorityAddress] = true;
-      return true;
-    } else {
-      return false;
-    }
+  function registerToAuthority(address authorityAddress) public 
+    onlyUser(msg.sender)
+    onlyIfNotRegisteredAt(authorityAddress)
+    onlyEnabled()
+    returns (bool) 
+  {
+    authorities[authorityAddress] = true;
+    return authorities[authorityAddress];
   }
 
   function isRegisteredByAuthority(address authority) public view returns (bool) {
     return authorities[authority];
   }
 
-  function setSecureDevicePublicKey(string devicePublicKey) public onlyUser(msg.sender)  {
-    require(secureDevicesPublicKeys[devicePublicKey] != true);
-
+  function setSecureDevicePublicKey(string devicePublicKey) public 
+    onlyUser(msg.sender)
+    onlyDeviceNotSetted(devicePublicKey)
+    onlyEnabled()
+  {
     secureDevicesPublicKeys[devicePublicKey] = true;
   }
 
-  function disableSecureDevice(string devicePublicKey) public onlyUser(msg.sender) {
+  function disableSecureDevice(string devicePublicKey) public 
+    onlyUser(msg.sender)
+    onlyEnabled()  
+  {
     secureDevicesPublicKeys[devicePublicKey] = false;
+  }
+
+  function disableAndLinkToNew(address newUserContract) public 
+    // onlyAuthority(msg.sender)
+    onlyEnabled()
+    returns (bool)
+  {
+    // disable the contract
+    enable = false;
+
+    // then set the new contract address
+    nextContract = newUserContract;
+  }
+
+  function signData(string cidDataSigned) public
+    onlyUser(msg.sender)
+    onlyNotSigned(cidDataSigned)
+    onlyEnabled()
+    returns (bool)
+  {
+    signed[cidDataSigned] = true;
+    return true;
+  }
+
+  function isSigned(string cidDataSigned) public view returns (bool) {
+    return signed[cidDataSigned];
   }
 
   function getPublicKey() public view returns (string) {
@@ -98,26 +167,5 @@ contract User3 {
 
   function getOwner() public view returns (address) {
     return owner;
-  }
-
-  function disableAndLinkToNew(address newUserContract) public onlyAuthority(msg.sender) returns (bool) {
-    // disable the contract
-    enable = false;
-
-    // then set the new contract address
-    nextContract = newUserContract;
-  }
-
-  function signData(string cidDataSigned) public onlyUser(msg.sender) returns (bool) {
-    if (signed[cidDataSigned] != true) {
-      signed[cidDataSigned] = true;
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  function isSigned(string cidDataSigned) public view returns (bool) {
-    return signed[cidDataSigned];
   }
 }
