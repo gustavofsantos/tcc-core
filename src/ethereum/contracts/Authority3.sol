@@ -20,17 +20,31 @@ contract Authority3 {
     authority = msg.sender;
   }
 
-  function registerUser(address userContractAddress) public {
+  function registerUser(address userContractAddress) public returns (bool) {
+    require (
+      msg.sender == authority,
+      "Only the authority owner can call this"
+    );
 
     emit RegisterEvent(msg.sender, userContractAddress);
 
     users[userContractAddress] = userContractAddress;
+    return true;
   }
 
-  function changeUserLatestContract(address originalUserContract, address latestUserContract) 
-    public onlyAuthority(msg.sender)
-  {
+  function changeUserLatestContract(address originalUserContract, address latestUserContract) public returns (bool) {
+    require (
+      msg.sender == authority,
+      "Only the authority owner can call this"
+    );
+
+    require(
+      users[originalUserContract] != latestUserContract,
+      "You cannot change a contract to the same contract"
+    );
+
     users[originalUserContract] = latestUserContract;
+    return true;
   }
 
   function getOwner() public view returns (address) {

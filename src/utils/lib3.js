@@ -31,6 +31,8 @@ const web3 = new Web3(ganache.provider({
   }
 }));
 
+
+
 web3.eth.subscribe('logs', {}, (error, result) => {
   if (error) {
     console.log(error);
@@ -63,9 +65,9 @@ function stop() {
 
 /**
  * 
- * @param {string} userAddress 
- * @param {string} userPublicKey 
- * @param {object} userAttributes 
+ * @param {string} userAddress
+ * @param {string} userPublicKey
+ * @param {object} userAttributes
  */
 async function createUser(userAddress, userPublicKey, userAttributes) {
   try {
@@ -80,14 +82,14 @@ async function createUser(userAddress, userPublicKey, userAttributes) {
 
 /**
  * 
- * @param {string} authorityAddress 
- * @param {object} authorityAttributes 
+ * @param {string} authorityAddress
+ * @param {object} authorityAttributes
  */
 async function createAuthority(authorityAddress, authorityAttributes) {
   try {
     const authorityContract = await authorityLib.createAuthorityContract(web3);
     const deployedContract = await authorityLib.deployAuthorityContract(authorityAddress, authorityContract, authorityAttributes);
-    
+
     return deployedContract;
   } catch (e) {
     console.log(e);
@@ -117,7 +119,18 @@ async function registerUser(userContract, userAddress, authorityContract, author
     return resUser && resAuthority;
   } catch (e) {
     console.log(e);
-    return null;
+    process.exit(1);
+  }
+}
+
+async function userSignData(userAddress, userContract, userPrivateKey, data) {
+
+  try {
+    const res = await userLib.userSignData(userAddress, userContract, userPrivateKey, data);
+    return res;
+  } catch (e) {
+    console.log(e);
+    process.exit(1);
   }
 }
 
@@ -205,7 +218,10 @@ async function changeUserPublicKey(userAddress, latestUserContract, userPublicKe
       newUserContractDeployed._address
     );
 
-    return newUserContractDeployed
+    return {
+      status: res,
+      contract: newUserContractDeployed
+    }
   } catch (e) {
     console.log(e);
     return null;
@@ -225,6 +241,7 @@ module.exports = {
   createUser,
   createAuthority,
   registerUser,
+  userSignData,
   changeUserAttributes,
   changeUserPublicKey,
   getAddresses,

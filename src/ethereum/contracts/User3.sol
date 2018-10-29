@@ -90,12 +90,22 @@ contract User3 {
     nextContract = address(0);
   }
 
-  function registerToAuthority(address authorityAddress) public 
-    onlyUser(msg.sender)
-    onlyIfNotRegisteredAt(authorityAddress)
-    onlyEnabled()
-    returns (bool) 
-  {
+  function registerToAuthority(address authorityAddress) public returns (bool) {
+    require(
+      msg.sender == owner,
+      "Only the user owner can call this"
+    );
+
+    require(
+      enable == true,
+      "The contract need to be enabled"
+    );
+
+    require(
+      authorities[authorityAddress] != true,
+      "You can only register to authority one time"
+    );
+
     authorities[authorityAddress] = true;
     return authorities[authorityAddress];
   }
@@ -112,31 +122,55 @@ contract User3 {
     secureDevicesPublicKeys[devicePublicKey] = true;
   }
 
-  function disableSecureDevice(string devicePublicKey) public 
-    onlyUser(msg.sender)
-    onlyEnabled()  
-  {
+  function disableSecureDevice(string devicePublicKey) public {
+    require(
+      msg.sender == owner,
+      "Only the user owner can call this"
+    );
+
+    require(
+      enable == true,
+      "The contract need to be enabled"
+    );
+
     secureDevicesPublicKeys[devicePublicKey] = false;
   }
 
-  function disableAndLinkToNew(address newUserContract) public 
-    // onlyAuthority(msg.sender)
-    onlyEnabled()
-    returns (bool)
-  {
+  function disableAndLinkToNew(address newUserContract) public returns (bool) {
+    require(
+      enable == true,
+      "The contract need to be enabled"
+    );
+
+    // require(
+    //   authorities[msg.sender] == true,
+    //   "Only one authority can call this"
+    // );
+
     // disable the contract
     enable = false;
-
     // then set the new contract address
     nextContract = newUserContract;
+
+    return true;
   }
 
-  function signData(string cidDataSigned) public
-    onlyUser(msg.sender)
-    onlyNotSigned(cidDataSigned)
-    onlyEnabled()
-    returns (bool)
-  {
+  function signData(string cidDataSigned) public returns (bool) {
+    require(
+      msg.sender == owner,
+      "Only the user owner can call this"
+    );
+
+    require(
+      enable == true,
+      "The contract need to be enabled"
+    );
+
+    require(
+      signed[cidDataSigned] != true,
+      "Data is already signed"
+    );
+
     signed[cidDataSigned] = true;
     return true;
   }

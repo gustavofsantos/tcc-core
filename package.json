@@ -17,7 +17,11 @@
     "test": "node test/Authority.test.js",
     "testAuthority": "mocha --bail test/Authority.test.js",
     "testAuthority2": "mocha --bail test/Authority2.test.js",
-    "testAuthority3": "npm run compileAuthority3 ; npm run compileUser3 ; mocha --bail test/Authority3.test.js"
+    "testAuthority3": "mocha --bail test/Authority3.test.js",
+    "genDefaultKeys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/default",
+    "genNewKeys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/new",
+    "genSecureDvc1Keys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/secure_dvc_1",
+    "genSecureDvc2Keys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/secure_dvc_2"
   },
   "author": "",
   "license": "ISC",

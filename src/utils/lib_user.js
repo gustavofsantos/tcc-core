@@ -1,4 +1,5 @@
 const fs = require('fs');
+const crypto = require('crypto');
 
 const { pushToIPFS, pullFromIPFS, stopIPFS, waitIpfsReady } = require('./lib_ipfs');
 
@@ -151,19 +152,17 @@ async function userDisableSecureDevice(userAddress, userDeployedContract, secure
   } catch (e) {
     console.log(e);
     process.exit(1);
-    return e;
   }
 }
 
 async function userSignData(userAddress, userDeployedContract, userPrivateKey, data) {
   try {
-    const sign = crypto.createSign('SHA256');
-    sign.write(data);
-    sign.end();
-    const signed = sign.sign(userPrivateKey, 'hex');
+    const sign = crypto.createSign('SHA512');
+    sign.update(data, 'utf8');
+    const signature = sign.sign(userPrivateKey, 'hex');
 
     const ipfsCID = await pushToIPFS({
-      signedData: signed,
+      signedData: signature,
       author: userAddress
     });
 
@@ -176,11 +175,13 @@ async function userSignData(userAddress, userDeployedContract, userPrivateKey, d
     console.log('estimateGas: ', estimateGas);
     console.log();
 
-    return result;
+    return {
+      status: result,
+      signature
+    }
   } catch (e) {
     console.log(e);
     process.exit(1);
-    return e;
   }
 }
 
@@ -189,7 +190,7 @@ async function userIsDataSigned(callerAddress, userDeployedContract, dataSignedC
 
     const method = userDeployedContract.methods.isSigned(dataSignedCID);
     const result = await method.call({ from: callerAddress });
-    
+
     const estimateGas = await method.estimateGas({ from : callerAddress });
 
     console.log('=== User: isSigned ===');

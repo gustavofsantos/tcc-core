@@ -1,5 +1,6 @@
 const assert = require('assert');
-const { getUsers, getUser } = require('../src/utils/utils');
+const fs = require('fs');
+const { getUsers, getUser, getKeyPair } = require('../src/utils/utils');
 const { normal, success, error } = require('../src/utils/logger');
 // const { numberAuthorities } = require('../../config');
 
@@ -7,6 +8,7 @@ const {
   createUser,
   createAuthority,
   registerUser,
+  userSignData,
   changeUserAttributes,
   changeUserPublicKey,
   getAddresses,
@@ -22,17 +24,26 @@ const libAuthority = require('../src/utils/lib_authority');
 
 const numberAuthorities = 5;
 const numberUsersPerAuthority = 50;
-const defaultPublicKey = 'default-public-key';
-const defaultPrivateKey = 'default-private-key';
+
+console.log('dir', __dirname);
+const defaultPublicKey = fs.readFileSync(__dirname + '/keys/default.pub', 'utf8');
+const defaultPrivateKey = fs.readFileSync(__dirname + '/keys/default', 'utf8');
+const newPublicKey = fs.readFileSync(__dirname + '/keys/new.pub', 'utf8');
+const newPrivateKey = fs.readFileSync(__dirname + '/keys/new', 'utf8');
 
 describe("TCC-CORE SINGLE AUTHORITY-USER UNIT TEST", function() {
-  this.timeout("5000");
+  this.timeout("50000");
 
   const authority = {};
   const user = {};
+  const newUser = {};
 
   before(async function() {
     await waitSystemReady();
+
+    console.log('--- default keys ---');
+    console.log('defaultPublicKey', defaultPublicKey);
+    console.log('defaultPrivateKey', defaultPrivateKey);
   });
 
   describe("Get Authority and User addresses", function() {
@@ -49,7 +60,9 @@ describe("TCC-CORE SINGLE AUTHORITY-USER UNIT TEST", function() {
     it("Should create Authority contract", async function() {
       try {
         authority.contract = await createAuthority(authority.address, getUser());
-        assert(authority.contract);
+
+        console.log(authority.contract.methods);
+        assert(authority.contract.methods.registerUser && authority.contract.methods.changeUserLatestContract);
       } catch (e) {
         console.log(e);
         assert(false);
@@ -73,7 +86,18 @@ describe("TCC-CORE SINGLE AUTHORITY-USER UNIT TEST", function() {
     it("Should register User to the Authority", async function() {
       try {
         const res = await registerUser(user.contract, user.address, authority.contract, authority.address);
-        assert(res);
+        assert(res && user.address !== authority.address);
+      } catch (e) {
+        console.log(e);
+        assert(false);
+      }
+    });
+
+    it("Should user sign data", async function() {
+      try {
+        const res = await userSignData(user.address, user.contract, defaultPrivateKey, "this is the data to sign");
+        console.log(res.signature);
+        assert(res.status);
       } catch (e) {
         console.log(e);
         assert(false);
@@ -81,14 +105,30 @@ describe("TCC-CORE SINGLE AUTHORITY-USER UNIT TEST", function() {
     });
 
     it("Should replace User public key", async function() {
-      const newPublicKey = 'new-public-key'
       try {
-        const newUserContract = await changeUserPublicKey(user.address, user.contract, newPublicKey, authority.address, authority.contract);
+        const authorityAddressOwner = await libAuthority.getOwner(user.address, authority.contract);
+
+        const res = await changeUserPublicKey(user.address, user.contract, newPublicKey, authority.address, authority.contract);
+        const newUserContract = res.contract;
 
         // check if was replaced
         const userNewKey = await libUser.userGetPublicKey(authority.address, newUserContract);
+        console.log('userNewKey: ', userNewKey);
 
-        assert(userNewKey === newPublicKey);
+        newUser.contract = newUserContract;
+        newUser.address = user.address;
+
+        assert(userNewKey === newPublicKey && res.status);
+      } catch (e) {
+        console.log(e);
+        assert(false);
+      }
+    });
+
+    it("Should try to sign data with old contract", async function() {
+      try {
+        const res = await userSignData(user.address, user.contract, defaultPrivateKey, "this is another data to sign");
+        assert(res.status);
       } catch (e) {
         console.log(e);
         assert(false);

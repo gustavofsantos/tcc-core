@@ -62,7 +62,7 @@ async function registerUser(authorityAddress, authorityDeployedContract, userCon
     console.log('=== Authority: registerUser ===');
     console.log('estimateGas: ', estimateGas);
 
-    return true;
+    return result;
   } catch (e) {
     console.log(e);
     process.exit(0);
@@ -102,7 +102,10 @@ async function changeUserLatestContract(
     console.log('=== Authority: changeUserLatestContract ===');
     console.log('estimateGas: ', estimateGas2);
 
-    return true;
+    console.log('result1: ', result1);
+    console.log('result2: ', result2);
+
+    return result1 && result2;
   } catch (e) {
     console.log(e);
     process.exit(1);
@@ -110,9 +113,27 @@ async function changeUserLatestContract(
   }
 }
 
+async function getOwner(caller, authorityContract) {
+  try {
+    const method = authorityContract.methods.getOwner();
+    const result = await method.call({ from: caller });
+
+    const estimateGas = await method.estimateGas({ from: caller });
+
+    console.log('=== Authority: getOwner ===');
+    console.log('estimateGas: ', estimateGas);
+
+    return result;
+  } catch (error) {
+    console.log(e);
+    process.exit(1);
+  }
+}
+
 module.exports = {
   createAuthorityContract,
   deployAuthorityContract,
   registerUser,
-  changeUserLatestContract
+  changeUserLatestContract,
+  getOwner
 }

@@ -29,8 +29,7 @@ function pushToIPFS(dataToPush) {
         if (err) {
           console.log(err);
           reject(err);
-        } 
-        else {
+        } else {
           resolve(files[0].hash);
         }
       });
