@@ -90,22 +90,11 @@ contract User3 {
     nextContract = address(0);
   }
 
-  function registerToAuthority(address authorityAddress) public returns (bool) {
-    require(
-      msg.sender == owner,
-      "Only the user owner can call this"
-    );
-
-    require(
-      enable == true,
-      "The contract need to be enabled"
-    );
-
-    require(
-      authorities[authorityAddress] != true,
-      "You can only register to authority one time"
-    );
-
+  function registerToAuthority(address authorityAddress) public
+    onlyUser(msg.sender)
+    onlyEnabled()
+    onlyIfNotRegisteredAt(authorityAddress) returns (bool) 
+  {
     authorities[authorityAddress] = true;
     return authorities[authorityAddress];
   }
@@ -122,31 +111,17 @@ contract User3 {
     secureDevicesPublicKeys[devicePublicKey] = true;
   }
 
-  function disableSecureDevice(string devicePublicKey) public {
-    require(
-      msg.sender == owner,
-      "Only the user owner can call this"
-    );
-
-    require(
-      enable == true,
-      "The contract need to be enabled"
-    );
-
+  function disableSecureDevice(string devicePublicKey) public 
+    onlyUser(msg.sender)
+    onlyEnabled()
+  {
     secureDevicesPublicKeys[devicePublicKey] = false;
   }
 
-  function disableAndLinkToNew(address newUserContract) public returns (bool) {
-    require(
-      enable == true,
-      "The contract need to be enabled"
-    );
-
-    // require(
-    //   authorities[msg.sender] == true,
-    //   "Only one authority can call this"
-    // );
-
+  function disableAndLinkToNew(address newUserContract) public 
+    onlyEnabled()
+    onlyAuthority(msg.sender) returns (bool)
+  {
     // disable the contract
     enable = false;
     // then set the new contract address
@@ -155,22 +130,11 @@ contract User3 {
     return true;
   }
 
-  function signData(string cidDataSigned) public returns (bool) {
-    require(
-      msg.sender == owner,
-      "Only the user owner can call this"
-    );
-
-    require(
-      enable == true,
-      "The contract need to be enabled"
-    );
-
-    require(
-      signed[cidDataSigned] != true,
-      "Data is already signed"
-    );
-
+  function signData(string cidDataSigned) public
+    onlyUser(msg.sender)
+    onlyEnabled()
+    onlyNotSigned(cidDataSigned) returns (bool) 
+  {
     signed[cidDataSigned] = true;
     return true;
   }

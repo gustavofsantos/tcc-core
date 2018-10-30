@@ -21,7 +21,8 @@
     "genDefaultKeys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/default",
     "genNewKeys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/new",
     "genSecureDvc1Keys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/secure_dvc_1",
-    "genSecureDvc2Keys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/secure_dvc_2"
+    "genSecureDvc2Keys": "ssh-keygen -t ecdsa -b 521 -f ./test/keys/secure_dvc_2",
+    "computeCosts": "mocha --bail test/computeUnitCosts.test.js"
   },
   "author": "",
   "license": "ISC",

@@ -2,11 +2,13 @@ pragma solidity ^0.4.24;
 
 contract Authority3 {
 
+  event RegisterEvent(address caller, address userContract);
+  event ChangeUserContract(address latestContract);
+
   address authority;
+  string  cid;
 
   mapping (address => address) users;
-
-  event RegisterEvent(address caller, address userContract);
 
   modifier onlyAuthority(address caller) {
     require (
@@ -16,34 +18,33 @@ contract Authority3 {
     _;
   }
 
-  constructor () public {
-    authority = msg.sender;
+  modifier onlyDifferentContract(address original, address latest) {
+    require(
+      users[original] != latest,
+      "You cannot change a contract to the same contract"
+    );
+    _;
   }
 
-  function registerUser(address userContractAddress) public returns (bool) {
-    require (
-      msg.sender == authority,
-      "Only the authority owner can call this"
-    );
+  constructor (string authorityCID) public {
+    authority = msg.sender;
+    cid = authorityCID;
+  }
 
+  function registerUser(address userContractAddress) public onlyAuthority(msg.sender) returns (bool) {
+    users[userContractAddress] = userContractAddress;
     emit RegisterEvent(msg.sender, userContractAddress);
 
-    users[userContractAddress] = userContractAddress;
     return true;
   }
 
-  function changeUserLatestContract(address originalUserContract, address latestUserContract) public returns (bool) {
-    require (
-      msg.sender == authority,
-      "Only the authority owner can call this"
-    );
-
-    require(
-      users[originalUserContract] != latestUserContract,
-      "You cannot change a contract to the same contract"
-    );
-
+  function changeUserLatestContract(address originalUserContract, address latestUserContract) public 
+    onlyAuthority(msg.sender)
+    onlyDifferentContract(originalUserContract, latestUserContract) returns (bool) 
+  {  
     users[originalUserContract] = latestUserContract;
+    emit ChangeUserContract(latestUserContract);
+
     return true;
   }
 

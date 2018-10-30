@@ -32,6 +32,9 @@ async function deployAuthorityContract(authorityAddress, authorityContract, auth
     const deployedContract = await authorityContract
       .deploy({
         data: authorityBIN,
+        arguments: [
+          authorityIPFSCID
+        ]
       })
       .send({
         from: authorityAddress,
